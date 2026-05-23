@@ -1,0 +1,184 @@
+/* ═══════════════════════════════════════════════════
+   PROFILE PAGE — Styles
+   ═══════════════════════════════════════════════════ */
+
+.page { display: flex; flex-direction: column; gap: 24px; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; }
+.title { font-family: var(--font-headline); font-size: clamp(22px, 3vw, 28px); font-weight: 700; color: var(--on-surface); }
+.subtitle { font-size: 15px; color: var(--on-surface-variant); margin-top: 4px; }
+
+/* Content Grid */
+.content { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+
+/* ── Form Section ── */
+.formSection { display: flex; flex-direction: column; gap: 20px; }
+
+.card {
+  background: var(--surface-container-lowest); border: 1px solid var(--surface-container-high);
+  border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column; gap: 20px;
+}
+
+.cardTitle {
+  font-family: var(--font-headline); font-size: 16px; font-weight: 600; color: var(--on-surface);
+  display: flex; align-items: center; gap: 10px;
+}
+
+.cardTitle svg { color: var(--primary-container); }
+
+.fieldGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 13px; font-weight: 600; color: var(--on-surface-variant); letter-spacing: 0.01em;
+}
+
+.field input,
+.field select {
+  padding: 11px 16px; border: 1.5px solid var(--surface-container-high);
+  border-radius: var(--radius-md); font-family: var(--font-body); font-size: 14px;
+  color: var(--on-surface); outline: none; transition: border-color 0.2s;
+  background: var(--surface-container-low);
+}
+
+.field input:focus,
+.field select:focus { border-color: var(--primary-container); }
+
+.inputUnit {
+  position: relative; display: flex; align-items: center;
+}
+
+.inputUnit input {
+  flex: 1; padding-right: 48px;
+}
+
+.inputUnit span {
+  position: absolute; right: 14px; font-size: 13px; font-weight: 500; color: var(--outline);
+  pointer-events: none;
+}
+
+/* ── Goal Options ── */
+.goalOptions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.goalCard {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 20px 16px; border: 2px solid var(--surface-container-high);
+  border-radius: var(--radius-lg); background: var(--surface-container-lowest);
+  cursor: pointer; transition: all 0.25s; text-align: center;
+}
+
+.goalCard:hover { border-color: var(--outline-variant); }
+
+.goalCardActive {
+  border-color: var(--primary-container) !important;
+  background: rgba(46, 125, 50, 0.04);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.08);
+}
+
+.goalIcon { font-size: 28px; }
+.goalLabel { font-size: 14px; font-weight: 600; color: var(--on-surface); }
+.goalDesc { font-size: 11px; color: var(--outline); }
+
+/* ── Save ── */
+.saveBar { display: flex; justify-content: flex-end; }
+
+.saveBtn {
+  padding: 12px 36px; background: var(--primary-container); color: white;
+  border: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.25s; font-family: var(--font-body);
+}
+
+.saveBtn:hover { background: var(--primary); transform: translateY(-1px); }
+
+/* ── Sidebar ── */
+.sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 96px; }
+
+/* Avatar Card */
+.avatarCard {
+  background: var(--surface-container-lowest); border: 1px solid var(--surface-container-high);
+  border-radius: var(--radius-lg); padding: 32px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+
+.avatarBig {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: linear-gradient(135deg, #2e7d32, #4caf50);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 8px;
+}
+
+.avatarBig span {
+  font-family: var(--font-headline); font-size: 32px; font-weight: 700; color: white;
+}
+
+.avatarCard h3 { font-family: var(--font-headline); font-size: 18px; font-weight: 600; color: var(--on-surface); }
+.avatarCard p { font-size: 14px; color: var(--outline); }
+
+/* BMI Card */
+.bmiCard {
+  background: var(--surface-container-lowest); border: 1px solid var(--surface-container-high);
+  border-radius: var(--radius-lg); padding: 24px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+
+.bmiCard h4 { font-size: 14px; font-weight: 600; color: var(--on-surface-variant); }
+
+.bmiValue { font-family: var(--font-headline); font-size: 42px; font-weight: 700; line-height: 1; }
+
+.bmiLabel {
+  padding: 4px 16px; border-radius: var(--radius-full);
+  font-size: 13px; font-weight: 600;
+}
+
+.bmiScale { width: 100%; margin-top: 8px; }
+
+.bmiBar {
+  width: 100%; height: 8px; border-radius: var(--radius-full); position: relative;
+  background: linear-gradient(90deg, #2196f3 0%, #2e7d32 30%, #4caf50 50%, #ff9800 70%, #f44336 100%);
+}
+
+.bmiIndicator {
+  position: absolute; top: -4px; width: 16px; height: 16px;
+  border-radius: 50%; background: white; border: 3px solid var(--on-surface);
+  transform: translateX(-50%); box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: left 0.5s ease;
+}
+
+.bmiLabels {
+  display: flex; justify-content: space-between; margin-top: 6px;
+  font-size: 10px; color: var(--outline);
+}
+
+/* Calorie Card */
+.calorieCard {
+  background: var(--surface-container-lowest); border: 1px solid var(--surface-container-high);
+  border-radius: var(--radius-lg); padding: 24px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+
+.calorieCard h4 { font-size: 14px; font-weight: 600; color: var(--on-surface-variant); }
+
+.calorieValue {
+  font-family: var(--font-headline); font-size: 40px; font-weight: 700;
+  color: var(--primary-container); line-height: 1.1;
+}
+
+.calorieUnit { font-size: 13px; font-weight: 500; color: var(--outline); }
+
+.calorieNote {
+  font-size: 12px; color: var(--outline); line-height: 1.5;
+  margin-top: 8px; max-width: 260px;
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 1000px) {
+  .content { grid-template-columns: 1fr; }
+  .sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
+  .sidebar > * { flex: 1; min-width: 200px; }
+}
+
+@media (max-width: 600px) {
+  .fieldGrid { grid-template-columns: 1fr; }
+  .goalOptions { grid-template-columns: 1fr; }
+  .sidebar { flex-direction: column; }
+}

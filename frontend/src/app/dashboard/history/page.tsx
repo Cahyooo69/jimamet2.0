@@ -1,0 +1,201 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import styles from "./history.module.css";
+import { apiListFoodRecords } from "@/lib/api";
+
+interface MealRecord {
+  id: number;
+  date: string;
+  time: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  emoji: string;
+}
+
+// Fallback dummy data when no real records exist
+const dummyData: MealRecord[] = [
+  { id: 1, date: "23 Mei 2026", time: "07:30", name: "Nasi Goreng Ayam", calories: 450, protein: 18, carbs: 52, fat: 16, emoji: "🍚" },
+  { id: 2, date: "23 Mei 2026", time: "10:00", name: "Smoothie Bayam & Pisang", calories: 180, protein: 6, carbs: 28, fat: 4, emoji: "🥤" },
+  { id: 3, date: "23 Mei 2026", time: "12:30", name: "Salmon Panggang + Sayur", calories: 520, protein: 35, carbs: 12, fat: 28, emoji: "🐟" },
+  { id: 4, date: "23 Mei 2026", time: "15:00", name: "Alpukat Toast", calories: 280, protein: 8, carbs: 22, fat: 18, emoji: "🥑" },
+  { id: 5, date: "22 Mei 2026", time: "07:00", name: "Oatmeal + Buah", calories: 320, protein: 12, carbs: 48, fat: 8, emoji: "🥣" },
+  { id: 6, date: "22 Mei 2026", time: "12:00", name: "Ayam Bakar + Nasi", calories: 580, protein: 32, carbs: 55, fat: 20, emoji: "🍗" },
+  { id: 7, date: "22 Mei 2026", time: "15:30", name: "Yogurt Granola", calories: 220, protein: 10, carbs: 30, fat: 6, emoji: "🍨" },
+  { id: 8, date: "22 Mei 2026", time: "19:00", name: "Sup Sayur + Tempe", calories: 350, protein: 16, carbs: 38, fat: 12, emoji: "🍲" },
+];
+
+function formatDate(isoStr: string): string {
+  const d = new Date(isoStr);
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatTime(isoStr: string): string {
+  const d = new Date(isoStr);
+  return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+}
+
+function isToday(dateStr: string): boolean {
+  const today = new Date();
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const todayFormatted = `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+  return dateStr === todayFormatted;
+}
+
+function isThisWeek(dateStr: string): boolean {
+  const parts = dateStr.split(" ");
+  const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+  const d = new Date(parseInt(parts[2]), months.indexOf(parts[1]), parseInt(parts[0]));
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
+}
+
+export default function HistoryPage() {
+  const [filter, setFilter] = useState<"all" | "today" | "week">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [allData, setAllData] = useState<MealRecord[]>(dummyData);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiListFoodRecords().then(({ ok, data }) => {
+      if (ok && Array.isArray(data) && data.length > 0) {
+        const mapped: MealRecord[] = data.map((r: Record<string, unknown>) => ({
+          id: r.id as number,
+          date: formatDate(r.consumed_at as string),
+          time: formatTime(r.consumed_at as string),
+          name: r.food_name as string,
+          calories: (r.calories as number) || 0,
+          protein: (r.protein as number) || 0,
+          carbs: (r.carbs as number) || 0,
+          fat: (r.fat as number) || 0,
+          emoji: (r.emoji as string) || "🍽️",
+        }));
+        setAllData(mapped);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const filteredData = allData.filter((item) => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (filter === "today") return matchesSearch && isToday(item.date);
+    if (filter === "week") return matchesSearch && isThisWeek(item.date);
+    return matchesSearch;
+  });
+
+  const grouped = filteredData.reduce<Record<string, MealRecord[]>>((acc, item) => {
+    if (!acc[item.date]) acc[item.date] = [];
+    acc[item.date].push(item);
+    return acc;
+  }, {});
+
+  const totalCal = filteredData.reduce((s, i) => s + i.calories, 0);
+  const totalProtein = filteredData.reduce((s, i) => s + i.protein, 0);
+  const totalCarbs = filteredData.reduce((s, i) => s + i.carbs, 0);
+  const totalFat = filteredData.reduce((s, i) => s + i.fat, 0);
+
+  return (
+    <div className={styles.page}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Histori Konsumsi</h1>
+          <p className={styles.subtitle}>Lihat riwayat asupan makanan Anda.</p>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className={styles.summaryCards}>
+        <div className={styles.summaryCard}>
+          <span className={styles.summaryLabel}>Total Kalori</span>
+          <span className={styles.summaryValue}>{totalCal.toLocaleString()}</span>
+          <span className={styles.summaryUnit}>kkal</span>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.summaryLabel}>Protein</span>
+          <span className={styles.summaryValue}>{totalProtein}</span>
+          <span className={styles.summaryUnit}>gram</span>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.summaryLabel}>Karbohidrat</span>
+          <span className={styles.summaryValue}>{totalCarbs}</span>
+          <span className={styles.summaryUnit}>gram</span>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.summaryLabel}>Lemak</span>
+          <span className={styles.summaryValue}>{totalFat}</span>
+          <span className={styles.summaryUnit}>gram</span>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className={styles.toolbar}>
+        <div className={styles.filterTabs}>
+          {(["all", "today", "week"] as const).map((f) => (
+            <button
+              key={f}
+              className={`${styles.filterTab} ${filter === f ? styles.filterTabActive : ""}`}
+              onClick={() => setFilter(f)}
+            >
+              {f === "all" ? "Semua" : f === "today" ? "Hari Ini" : "7 Hari"}
+            </button>
+          ))}
+        </div>
+        <div className={styles.searchWrapper}>
+          <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Cari makanan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
+      </div>
+
+      {/* History List */}
+      <div className={styles.historyList}>
+        {Object.entries(grouped).map(([date, meals]) => (
+          <div key={date} className={styles.dateGroup}>
+            <div className={styles.dateHeader}>
+              <span className={styles.dateBadge}>{date}</span>
+              <span className={styles.dateCal}>
+                {meals.reduce((s, m) => s + m.calories, 0).toLocaleString()} kkal
+              </span>
+            </div>
+            <div className={styles.mealsTable}>
+              {meals.map((meal) => (
+                <div key={meal.id} className={styles.mealRow}>
+                  <span className={styles.mealEmoji}>{meal.emoji}</span>
+                  <div className={styles.mealInfo}>
+                    <span className={styles.mealName}>{meal.name}</span>
+                    <span className={styles.mealTime}>{meal.time}</span>
+                  </div>
+                  <div className={styles.mealNutrients}>
+                    <span className={styles.nutrientPill} style={{ background: "rgba(46,125,50,0.08)", color: "#2e7d32" }}>P: {meal.protein}g</span>
+                    <span className={styles.nutrientPill} style={{ background: "rgba(76,175,80,0.08)", color: "#4caf50" }}>K: {meal.carbs}g</span>
+                    <span className={styles.nutrientPill} style={{ background: "rgba(255,152,0,0.08)", color: "#f57c00" }}>L: {meal.fat}g</span>
+                  </div>
+                  <span className={styles.mealCal}>{meal.calories} kkal</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        {filteredData.length === 0 && (
+          <div className={styles.emptyState}>
+            <p>Tidak ada data yang cocok.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,222 @@
+/* ═══════════════════════════════════════════════════
+   DASHBOARD LAYOUT — Top Navigation
+   ═══════════════════════════════════════════════════ */
+
+.layout {
+  min-height: 100vh;
+  background: var(--surface-container-low);
+}
+
+/* ── TOP NAV ── */
+.topNav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--surface-container-high);
+  padding: 0 32px;
+}
+
+.topNavInner {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 32px;
+}
+
+.topNavLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menuBtn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--on-surface);
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+/* ── Nav Links ── */
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.navLink:hover {
+  background: var(--surface-container);
+  color: var(--on-surface);
+}
+
+.navLinkActive {
+  background: rgba(46, 125, 50, 0.08) !important;
+  color: var(--primary-container) !important;
+  font-weight: 600;
+}
+
+.navIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.navIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Right Side ── */
+.topNavRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notifBtn {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--on-surface-variant);
+  padding: 8px;
+  border-radius: var(--radius-md);
+  transition: background 0.2s;
+}
+
+.notifBtn:hover {
+  background: var(--surface-container);
+}
+
+.notifDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-container), var(--tertiary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: var(--font-headline);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.avatar:hover {
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+}
+
+/* ── MAIN ── */
+.main {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+/* ── Mobile Menu ── */
+.mobileOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.mobileMenu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100%;
+  background: white;
+  padding: 80px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.mobileLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+  transition: all 0.2s;
+}
+
+.mobileLink:hover {
+  background: var(--surface-container);
+}
+
+.mobileLinkActive {
+  background: rgba(46, 125, 50, 0.08);
+  color: var(--primary-container);
+  font-weight: 600;
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 900px) {
+  .navLinks { display: none; }
+  .menuBtn { display: block; }
+  .topNav { padding: 0 16px; }
+  .main { padding: 20px 16px; }
+}
