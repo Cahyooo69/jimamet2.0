@@ -16,17 +16,7 @@ interface MealRecord {
   emoji: string;
 }
 
-// Fallback dummy data when no real records exist
-const dummyData: MealRecord[] = [
-  { id: 1, date: "23 Mei 2026", time: "07:30", name: "Nasi Goreng Ayam", calories: 450, protein: 18, carbs: 52, fat: 16, emoji: "🍚" },
-  { id: 2, date: "23 Mei 2026", time: "10:00", name: "Smoothie Bayam & Pisang", calories: 180, protein: 6, carbs: 28, fat: 4, emoji: "🥤" },
-  { id: 3, date: "23 Mei 2026", time: "12:30", name: "Salmon Panggang + Sayur", calories: 520, protein: 35, carbs: 12, fat: 28, emoji: "🐟" },
-  { id: 4, date: "23 Mei 2026", time: "15:00", name: "Alpukat Toast", calories: 280, protein: 8, carbs: 22, fat: 18, emoji: "🥑" },
-  { id: 5, date: "22 Mei 2026", time: "07:00", name: "Oatmeal + Buah", calories: 320, protein: 12, carbs: 48, fat: 8, emoji: "🥣" },
-  { id: 6, date: "22 Mei 2026", time: "12:00", name: "Ayam Bakar + Nasi", calories: 580, protein: 32, carbs: 55, fat: 20, emoji: "🍗" },
-  { id: 7, date: "22 Mei 2026", time: "15:30", name: "Yogurt Granola", calories: 220, protein: 10, carbs: 30, fat: 6, emoji: "🍨" },
-  { id: 8, date: "22 Mei 2026", time: "19:00", name: "Sup Sayur + Tempe", calories: 350, protein: 16, carbs: 38, fat: 12, emoji: "🍲" },
-];
+// Fetches from real API, no fallback hardcoded data
 
 function formatDate(isoStr: string): string {
   const d = new Date(isoStr);
@@ -58,7 +48,7 @@ function isThisWeek(dateStr: string): boolean {
 export default function HistoryPage() {
   const [filter, setFilter] = useState<"all" | "today" | "week">("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [allData, setAllData] = useState<MealRecord[]>(dummyData);
+  const [allData, setAllData] = useState<MealRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

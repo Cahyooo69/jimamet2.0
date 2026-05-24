@@ -1,74 +1,79 @@
--- ═══════════════════════════════════════════════════
---  Jimamet Medical Nutrition Platform
---  Supabase Database Schema
--- ═══════════════════════════════════════════════════
+-- Drop existing tables if any (Warning: This will delete existing data)
+DROP TABLE IF EXISTS public.recommendation CASCADE;
+DROP TABLE IF EXISTS public.food_analysis CASCADE;
+DROP TABLE IF EXISTS public.image CASCADE;
+DROP TABLE IF EXISTS public.history CASCADE;
+DROP TABLE IF EXISTS public.user CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
+DROP TABLE IF EXISTS public.food_records CASCADE;
+DROP TABLE IF EXISTS public.user_profiles CASCADE;
 
--- 1. User Profiles
-CREATE TABLE IF NOT EXISTS user_profiles (
-    id BIGSERIAL PRIMARY KEY,
-    user_id INTEGER UNIQUE NOT NULL,
-    full_name TEXT DEFAULT '',
-    email TEXT DEFAULT '',
-    username TEXT DEFAULT '',
-    age INTEGER,
-    weight REAL,
-    height REAL,
-    gender TEXT DEFAULT 'male' CHECK (gender IN ('male', 'female')),
-    activity_level TEXT DEFAULT 'moderate' CHECK (activity_level IN ('sedentary', 'light', 'moderate', 'active', 'veryActive')),
-    goal TEXT DEFAULT 'maintain' CHECK (goal IN ('lose', 'maintain', 'gain')),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now()
+-- 1. Tabel User (Sesuai diagram, menggunakan 'users' karena 'user' adalah reserved keyword di PostgreSQL)
+CREATE TABLE public.users (
+    id_user TEXT PRIMARY KEY, -- Menggunakan text agar bisa sinkron dengan username/id dari Django Auth
+    nama TEXT NOT NULL,
+    umur INTEGER DEFAULT 0,
+    tinggi_badan DECIMAL DEFAULT 0,
+    berat_badan DECIMAL DEFAULT 0,
+    aktivitas_harian TEXT DEFAULT 'sedentary',
+    email TEXT NOT NULL,
+    password TEXT NOT NULL, -- Catatan: Secara praktik nyata, ini disimpan ter-hash di backend Django, namun ditambahkan di sini sesuai ERD
+    target_kalori_harian DECIMAL DEFAULT 2000
 );
 
--- 2. Food Consumption Records
-CREATE TABLE IF NOT EXISTS food_records (
-    id BIGSERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    food_name TEXT NOT NULL,
-    emoji TEXT DEFAULT '🍽️',
-    calories REAL DEFAULT 0,
-    protein REAL DEFAULT 0,
-    carbs REAL DEFAULT 0,
-    fat REAL DEFAULT 0,
-    fiber REAL DEFAULT 0,
-    sugar REAL DEFAULT 0,
-    sodium REAL DEFAULT 0,
-    portion TEXT DEFAULT '1 porsi',
-    consumed_at TIMESTAMPTZ DEFAULT now(),
-    confidence REAL,
-    image_url TEXT,
-    tags JSONB DEFAULT '[]',
-    recommendation TEXT DEFAULT '',
-    created_at TIMESTAMPTZ DEFAULT now()
+-- 2. Tabel History
+CREATE TABLE public.history (
+    id_history UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_user TEXT REFERENCES public.users(id_user) ON DELETE CASCADE,
+    tanggal DATE NOT NULL,
+    total_kalori DECIMAL DEFAULT 0,
+    total_protein DECIMAL DEFAULT 0,
+    total_lemak DECIMAL DEFAULT 0,
+    total_karbohidrat DECIMAL DEFAULT 0,
+    UNIQUE(id_user, tanggal) -- Memastikan 1 user hanya punya 1 record history per hari
 );
 
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_food_records_user_id ON food_records(user_id);
-CREATE INDEX IF NOT EXISTS idx_food_records_consumed_at ON food_records(consumed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id);
+-- 3. Tabel Image
+CREATE TABLE public.image (
+    id_image UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_user TEXT REFERENCES public.users(id_user) ON DELETE CASCADE,
+    file_path TEXT NOT NULL,
+    tanggal_upload TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Auto-update updated_at on user_profiles
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- 4. Tabel Food Analysis (Memperbaiki typo kalori_protein menjadi kalori dan protein)
+CREATE TABLE public.food_analysis (
+    id_analysis UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_user TEXT REFERENCES public.users(id_user) ON DELETE CASCADE,
+    id_image UUID REFERENCES public.image(id_image) ON DELETE SET NULL,
+    nama_makanan TEXT NOT NULL,
+    kalori DECIMAL DEFAULT 0,
+    protein DECIMAL DEFAULT 0,
+    lemak DECIMAL DEFAULT 0,
+    karbohidrat DECIMAL DEFAULT 0,
+    gula DECIMAL DEFAULT 0,
+    tanggal TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
-CREATE TRIGGER update_user_profiles_updated_at
-    BEFORE UPDATE ON user_profiles
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- 5. Tabel Recommendation
+CREATE TABLE public.recommendation (
+    id_recommendation UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_user TEXT REFERENCES public.users(id_user) ON DELETE CASCADE,
+    tipe_rekomendasi TEXT CHECK (tipe_rekomendasi IN ('defisit', 'surplus', 'maintain')),
+    isi_rekomendasi TEXT NOT NULL,
+    tanggal TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- Enable Row Level Security (optional, for direct client access)
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE food_records ENABLE ROW LEVEL SECURITY;
+-- Setup RLS (Row Level Security) - Optional tapi direkomendasikan
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.image ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.food_analysis ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recommendation ENABLE ROW LEVEL SECURITY;
 
--- Allow service role full access (our Django backend uses the service key)
-CREATE POLICY "Service role full access on user_profiles" ON user_profiles
-    FOR ALL USING (true) WITH CHECK (true);
-
-CREATE POLICY "Service role full access on food_records" ON food_records
-    FOR ALL USING (true) WITH CHECK (true);
+-- Buat policy agar service role / API bisa mengakses semuanya
+CREATE POLICY "Enable all for API" ON public.users FOR ALL USING (true);
+CREATE POLICY "Enable all for API" ON public.history FOR ALL USING (true);
+CREATE POLICY "Enable all for API" ON public.image FOR ALL USING (true);
+CREATE POLICY "Enable all for API" ON public.food_analysis FOR ALL USING (true);
+CREATE POLICY "Enable all for API" ON public.recommendation FOR ALL USING (true);

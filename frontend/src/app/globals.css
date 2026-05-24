@@ -110,6 +110,7 @@ body {
   background: var(--surface);
   line-height: 1.6;
   overflow-x: hidden;
+  overflow-y: scroll;
 }
 
 /* ── Typography Classes ── */

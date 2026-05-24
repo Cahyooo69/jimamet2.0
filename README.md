@@ -59,7 +59,7 @@ pip install -r requirements.txt
 ```
 
 **Konfigurasi Environment Backend:**
-1. Duplikat/copy file `backend/.env.example` dan ubah namanya menjadi `backend/.env`.
+1. Duplikat/copy file `backend/.env.example` dan ubah namanya menjadi `backend/.env` (jika belum ada).
 2. Isi nilai yang ada di `.env` sesuai dengan kredensial Supabase Anda:
    ```env
    SECRET_KEY=your-django-secret-key-here
@@ -67,9 +67,16 @@ pip install -r requirements.txt
    ALLOWED_HOSTS=localhost,127.0.0.1
    SUPABASE_URL=https://[YOUR_PROJECT_REF].supabase.co
    SUPABASE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY]
+   SUPABASE_REST_URL=https://[YOUR_PROJECT_REF].supabase.co/rest/v1
    CORS_ALLOWED_ORIGINS=http://localhost:3000
    ```
-*(Catatan: Pastikan Anda menggunakan `service_role` key, BUKAN `anon` key, agar backend dapat menulis data.)*
+*(Catatan: `SUPABASE_REST_URL` digunakan untuk panggilan REST API aplikasi.)*
+
+**Jalankan Migrasi Database Lokal (SQLite):**
+```bash
+python manage.py migrate
+```
+*(Catatan: Sistem autentikasi / akun pengguna secara default menggunakan database SQLite bawaan Django, sementara data lainnya menggunakan Supabase).*
 
 **Jalankan Server Backend:**
 ```bash

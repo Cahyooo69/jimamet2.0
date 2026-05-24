@@ -6,7 +6,7 @@ Endpoints: Auth, User Profile, Food Consumption History.
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -69,19 +69,16 @@ def register_user(request):
         last_name=name_parts[1] if len(name_parts) > 1 else '',
     )
 
-    # Create profile in Supabase
     try:
-        supabase.insert('user_profiles', {
-            'user_id': user.id,
-            'full_name': full_name,
+        supabase.insert('users', {
+            'id_user': user.id,
+            'nama': full_name,
             'email': email,
-            'username': username,
-            'age': None,
-            'weight': None,
-            'height': None,
-            'gender': 'male',
-            'activity_level': 'moderate',
-            'goal': 'maintain',
+            'password': password,
+            'umur': request.data.get('age', None),
+            'berat_badan': request.data.get('weight', None),
+            'tinggi_badan': request.data.get('height', None),
+            'aktivitas_harian': request.data.get('activity_level', 'moderate'),
         })
     except Exception as e:
         print(f'[Supabase] Profile create warning: {e}')
@@ -114,6 +111,30 @@ def login_user(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # 1. Check ahli_gizi table first (before Django auth)
+    try:
+        ahli_rows = supabase.select('ahli_gizi', {'username': f'eq.{username}'})
+        if ahli_rows:
+            ag = ahli_rows[0]
+            # Simple password check (plaintext stored in Supabase for ahli gizi)
+            if ag.get('password') == password:
+                return Response({
+                    'message': 'Login successful.',
+                    'token': f'ahligizi_{ag["id_ahli_gizi"]}',  # pseudo-token
+                    'role': 'ahli_gizi',
+                    'user': {
+                        'id': ag['id_ahli_gizi'],
+                        'username': ag['username'],
+                        'email': ag.get('email', ''),
+                        'full_name': ag.get('nama', ''),
+                        'spesialisasi': ag.get('spesialisasi', ''),
+                        'no_str': ag.get('no_str', ''),
+                    }
+                })
+    except Exception as e:
+        print(f'[AhliGizi] Login check error: {e}')
+
+    # 2. Django auth for regular users
     user = authenticate(request, username=username, password=password)
     if user is not None:
         token, _ = Token.objects.get_or_create(user=user)
@@ -167,11 +188,24 @@ def get_current_user(request):
 def get_profile(request):
     """Get the current user's profile from Supabase."""
     try:
-        rows = supabase.select('user_profiles', {
-            'user_id': f'eq.{request.user.id}',
+        rows = supabase.select('users', {
+            'email': f'eq.{request.user.email}',
         })
         if rows:
-            return Response(rows[0])
+            row = rows[0]
+            # Map back to English for frontend
+            return Response({
+                'user_id': request.user.id,
+                'full_name': row.get('nama'),
+                'email': row.get('email'),
+                'username': request.user.username,
+                'age': row.get('umur'),
+                'weight': row.get('berat_badan'),
+                'height': row.get('tinggi_badan'),
+                'gender': 'male',
+                'activity_level': row.get('aktivitas_harian', 'moderate'),
+                'goal': 'maintain',
+            })
         else:
             # Return default profile
             return Response({
@@ -205,19 +239,29 @@ def update_profile(request):
 
     try:
         # Check if profile exists
-        rows = supabase.select('user_profiles', {'user_id': f'eq.{request.user.id}'})
+        rows = supabase.select('users', {'email': f'eq.{request.user.email}'})
+        
+        # Map English to Indonesian
+        mapped_data = {}
+        if 'full_name' in update_data: mapped_data['nama'] = update_data['full_name']
+        if 'age' in update_data: mapped_data['umur'] = update_data['age']
+        if 'weight' in update_data: mapped_data['berat_badan'] = update_data['weight']
+        if 'height' in update_data: mapped_data['tinggi_badan'] = update_data['height']
+        if 'activity_level' in update_data: mapped_data['aktivitas_harian'] = update_data['activity_level']
+        
         if rows:
-            result = supabase.update(
-                'user_profiles',
-                {'user_id': request.user.id},
-                update_data,
-            )
+            if mapped_data:
+                result = supabase.update(
+                    'users',
+                    {'email': request.user.email},
+                    mapped_data,
+                )
         else:
             # Create if doesn't exist
-            update_data['user_id'] = request.user.id
-            update_data['email'] = request.user.email
-            update_data['username'] = request.user.username
-            result = supabase.insert('user_profiles', update_data)
+            mapped_data['email'] = request.user.email
+            mapped_data['id_user'] = request.user.id
+            if 'nama' not in mapped_data: mapped_data['nama'] = request.user.get_full_name()
+            result = supabase.insert('users', mapped_data)
 
         # Also update Django user if full_name changed
         if 'full_name' in update_data:
@@ -363,3 +407,142 @@ def dashboard_summary(request):
         })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ═══════════════════════════════════════════════════
+#  KONSULTASI (Rujukan CoachBot → Ahli Gizi)
+# ═══════════════════════════════════════════════════
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_konsultasi(request):
+    """User (CoachBot) membuat permintaan konsultasi ke ahli gizi."""
+    pesan = request.data.get('pesan_coachbot', '')
+    if not pesan:
+        return Response({'error': 'pesan_coachbot is required.'}, status=400)
+    try:
+        res = supabase.insert('konsultasi', {
+            'id_user': str(request.user.id),
+            'pesan_coachbot': pesan,
+            'status': 'menunggu',
+            'catatan_ahli_gizi': '',
+        })
+        return Response(res, status=201)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def list_konsultasi(request):
+    """Ahli gizi melihat semua daftar konsultasi yang masuk."""
+    try:
+        rows = supabase.select('konsultasi', {'order': 'tanggal.desc'})
+        result = []
+        for r in rows:
+            # Ambil nama user dari tabel users
+            user_rows = supabase.select('users', {'id_user': f"eq.{r['id_user']}"})
+            user_info = user_rows[0] if user_rows else {}
+            result.append({
+                'id_konsultasi': r.get('id_konsultasi'),
+                'id_user': r.get('id_user'),
+                'nama_pasien': user_info.get('nama', 'Unknown'),
+                'email_pasien': user_info.get('email', ''),
+                'pesan_coachbot': r.get('pesan_coachbot'),
+                'status': r.get('status'),
+                'catatan_ahli_gizi': r.get('catatan_ahli_gizi', ''),
+                'tanggal': r.get('tanggal'),
+            })
+        return Response(result)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['PATCH'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def update_konsultasi(request, konsultasi_id):
+    """Ahli gizi mengupdate status & catatan konsultasi."""
+    update_data = {}
+    if 'status' in request.data:
+        update_data['status'] = request.data['status']
+    if 'catatan_ahli_gizi' in request.data:
+        update_data['catatan_ahli_gizi'] = request.data['catatan_ahli_gizi']
+    if not update_data:
+        return Response({'error': 'No fields to update.'}, status=400)
+    try:
+        res = supabase.update('konsultasi', {'id_konsultasi': konsultasi_id}, update_data)
+        return Response(res)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def delete_konsultasi(request, konsultasi_id):
+    """Ahli gizi menghapus sesi konsultasi."""
+    try:
+        supabase.delete('konsultasi', {'id_konsultasi': konsultasi_id})
+        return Response({'message': 'Konsultasi deleted successfully.'}, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+# ═══════════════════════════════════════════════════
+#  CHAT KONSULTASI (User ↔ Ahli Gizi)
+# ═══════════════════════════════════════════════════
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def list_chat(request, konsultasi_id):
+    """Ambil semua pesan chat untuk satu sesi konsultasi."""
+    try:
+        rows = supabase.select('chat_konsultasi', {
+            'id_konsultasi': f'eq.{konsultasi_id}',
+            'order': 'tanggal.asc'
+        })
+        return Response(rows)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def send_chat(request, konsultasi_id):
+    """Kirim pesan chat. pengirim: 'user' atau 'ahli_gizi'."""
+    pesan = request.data.get('pesan', '').strip()
+    pengirim = request.data.get('pengirim', 'user')
+    if not pesan:
+        return Response({'error': 'pesan tidak boleh kosong.'}, status=400)
+    if pengirim not in ('user', 'ahli_gizi'):
+        return Response({'error': 'pengirim harus user atau ahli_gizi.'}, status=400)
+    try:
+        # Pastikan konsultasi ada
+        k = supabase.select('konsultasi', {'id_konsultasi': f'eq.{konsultasi_id}'})
+        if not k:
+            return Response({'error': 'Konsultasi tidak ditemukan.'}, status=404)
+        res = supabase.insert('chat_konsultasi', {
+            'id_konsultasi': konsultasi_id,
+            'pengirim': pengirim,
+            'pesan': pesan,
+        })
+        return Response(res, status=201)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def delete_chat(request, chat_id):
+    """Hapus pesan chat."""
+    try:
+        supabase.delete('chat_konsultasi', {'id_chat': chat_id})
+        return Response({'message': 'Chat deleted successfully.'}, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+

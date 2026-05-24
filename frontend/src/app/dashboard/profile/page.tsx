@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import styles from "./profile.module.css";
-import { apiGetProfile, apiUpdateProfile } from "@/lib/api";
+import { apiGetProfile, apiUpdateProfile, apiDashboardSummary } from "@/lib/api";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState({
@@ -16,24 +16,28 @@ export default function ProfilePage() {
     activityLevel: "moderate",
     goal: "maintain",
   });
+  const [todayCalories, setTodayCalories] = useState(0);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiGetProfile().then(({ ok, data }) => {
-      if (ok && data) {
+    Promise.all([apiGetProfile(), apiDashboardSummary()]).then(([profRes, sumRes]) => {
+      if (profRes.ok && profRes.data) {
         setProfile({
-          fullName: data.full_name || "",
-          email: data.email || "",
-          username: data.username || "",
-          age: data.age?.toString() || "",
-          weight: data.weight?.toString() || "",
-          height: data.height?.toString() || "",
-          gender: data.gender || "male",
-          activityLevel: data.activity_level || "moderate",
-          goal: data.goal || "maintain",
+          fullName: profRes.data.full_name || "",
+          email: profRes.data.email || "",
+          username: profRes.data.username || "",
+          age: profRes.data.age?.toString() || "",
+          weight: profRes.data.weight?.toString() || "",
+          height: profRes.data.height?.toString() || "",
+          gender: profRes.data.gender || "male",
+          activityLevel: profRes.data.activity_level || "moderate",
+          goal: profRes.data.goal || "maintain",
         });
+      }
+      if (sumRes.ok && sumRes.data) {
+        setTodayCalories(sumRes.data.total_calories || 0);
       }
       setLoading(false);
     });
@@ -248,7 +252,10 @@ export default function ProfilePage() {
           {/* Calorie Target */}
           <div className={styles.calorieCard}>
             <h4>Target Kalori Harian</h4>
-            <div className={styles.calorieValue}>{estimateCalories()}</div>
+            <div className={styles.calorieValue}>
+              <span style={{ fontSize: "0.7em", color: "var(--on-surface-variant)" }}>{todayCalories} / </span>
+              {estimateCalories()}
+            </div>
             <span className={styles.calorieUnit}>kkal / hari</span>
             <p className={styles.calorieNote}>
               Berdasarkan metrik tubuh, tingkat aktivitas, dan target kesehatan Anda.

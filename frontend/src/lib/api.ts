@@ -44,7 +44,8 @@ async function apiFetch(
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
+  const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/register");
+  if (token && !isAuthEndpoint) {
     headers["Authorization"] = `Token ${token}`;
   }
 
@@ -63,6 +64,10 @@ export async function apiRegister(data: {
   email: string;
   password: string;
   full_name: string;
+  age?: number;
+  weight?: number;
+  height?: number;
+  activity_level?: string;
 }) {
   const res = await apiFetch("/auth/register/", {
     method: "POST",
@@ -191,3 +196,74 @@ export async function apiDashboardSummary(date?: string) {
   const json = await res.json();
   return { ok: res.ok, data: json };
 }
+
+// ═══════════════════════════════════════════════════
+//  KONSULTASI (CoachBot → Ahli Gizi)
+// ═══════════════════════════════════════════════════
+
+export async function apiListKonsultasi() {
+  const res = await apiFetch("/konsultasi/");
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiCreateKonsultasi(pesan_coachbot: string) {
+  const res = await apiFetch("/konsultasi/create/", {
+    method: "POST",
+    body: JSON.stringify({ pesan_coachbot }),
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiUpdateKonsultasi(
+  id: string,
+  data: { status?: string; catatan_ahli_gizi?: string }
+) {
+  const res = await apiFetch(`/konsultasi/${id}/update/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiDeleteKonsultasi(id: string) {
+  const res = await apiFetch(`/konsultasi/${id}/delete/`, {
+    method: "DELETE",
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+// ═══════════════════════════════════════════════════
+//  CHAT KONSULTASI (User ↔ Ahli Gizi)
+// ═══════════════════════════════════════════════════
+
+export async function apiListChat(konsultasiId: string) {
+  const res = await apiFetch(`/konsultasi/${konsultasiId}/chat/`);
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiSendChat(
+  konsultasiId: string,
+  pesan: string,
+  pengirim: "user" | "ahli_gizi"
+) {
+  const res = await apiFetch(`/konsultasi/${konsultasiId}/chat/send/`, {
+    method: "POST",
+    body: JSON.stringify({ pesan, pengirim }),
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiDeleteChat(chatId: string) {
+  const res = await apiFetch(`/chat/${chatId}/delete/`, {
+    method: "DELETE",
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+

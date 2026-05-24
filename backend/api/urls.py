@@ -27,4 +27,15 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/summary/', views.dashboard_summary, name='dashboard_summary'),
+
+    # Konsultasi (CoachBot → Ahli Gizi)
+    path('konsultasi/', views.list_konsultasi, name='list_konsultasi'),
+    path('konsultasi/create/', views.create_konsultasi, name='create_konsultasi'),
+    path('konsultasi/<str:konsultasi_id>/update/', views.update_konsultasi, name='update_konsultasi'),
+    path('konsultasi/<str:konsultasi_id>/delete/', views.delete_konsultasi, name='delete_konsultasi'),
+
+    # Chat Konsultasi (User ↔ Ahli Gizi)
+    path('konsultasi/<str:konsultasi_id>/chat/', views.list_chat, name='list_chat'),
+    path('konsultasi/<str:konsultasi_id>/chat/send/', views.send_chat, name='send_chat'),
+    path('chat/<str:chat_id>/delete/', views.delete_chat, name='delete_chat'),
 ]

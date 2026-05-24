@@ -24,6 +24,10 @@ function LoginForm() {
     username: "",
     password: "",
     confirmPassword: "",
+    age: "",
+    weight: "",
+    height: "",
+    activity_level: "moderate",
   });
 
   const handleLogin = async (e: FormEvent) => {
@@ -34,10 +38,18 @@ function LoginForm() {
     try {
       const { ok, data } = await apiLogin(loginData);
       if (ok) {
-        setSuccess("Login berhasil! Mengalihkan...");
-        setTimeout(() => router.push("/dashboard"), 1000);
+        // Store role in localStorage for routing
+        if (data.role === "ahli_gizi") {
+          localStorage.setItem("jimamet_role", "ahli_gizi");
+          setSuccess("Login berhasil! Mengalihkan ke Portal Ahli Gizi...");
+          setTimeout(() => router.push("/ahli-gizi"), 1000);
+        } else {
+          localStorage.setItem("jimamet_role", "user");
+          setSuccess("Login berhasil! Mengalihkan...");
+          setTimeout(() => router.push("/dashboard"), 1000);
+        }
       } else {
-        setError(data.error || "Login gagal. Periksa kredensial Anda.");
+        setError(data.error || data.detail || (data && JSON.stringify(data)) || "Login gagal. Periksa kredensial Anda.");
       }
     } catch {
       setError("Tidak dapat terhubung ke server.");
@@ -69,6 +81,10 @@ function LoginForm() {
         email: registerData.email,
         username: registerData.username,
         password: registerData.password,
+        age: registerData.age ? parseInt(registerData.age) : undefined,
+        weight: registerData.weight ? parseFloat(registerData.weight) : undefined,
+        height: registerData.height ? parseFloat(registerData.height) : undefined,
+        activity_level: registerData.activity_level,
       });
 
       if (ok) {
@@ -81,9 +97,13 @@ function LoginForm() {
           username: "",
           password: "",
           confirmPassword: "",
+          age: "",
+          weight: "",
+          height: "",
+          activity_level: "moderate",
         });
       } else {
-        setError(data.error || "Registrasi gagal.");
+        setError(data.error || data.detail || (data && JSON.stringify(data)) || "Registrasi gagal.");
       }
     } catch {
       setError("Tidak dapat terhubung ke server.");
@@ -351,6 +371,86 @@ function LoginForm() {
                 </div>
               </div>
 
+              {/* Data Fisik */}
+              <div className={styles.inputRow}>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="reg-age">Usia (thn)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      id="reg-age"
+                      type="number"
+                      placeholder="Mis: 25"
+                      value={registerData.age}
+                      onChange={(e) => setRegisterData({ ...registerData, age: e.target.value })}
+                      style={{ paddingLeft: 16 }}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="reg-weight">Berat (kg)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      id="reg-weight"
+                      type="number"
+                      step="0.1"
+                      placeholder="Mis: 65"
+                      value={registerData.weight}
+                      onChange={(e) => setRegisterData({ ...registerData, weight: e.target.value })}
+                      style={{ paddingLeft: 16 }}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="reg-height">Tinggi (cm)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      id="reg-height"
+                      type="number"
+                      step="0.1"
+                      placeholder="Mis: 170"
+                      value={registerData.height}
+                      onChange={(e) => setRegisterData({ ...registerData, height: e.target.value })}
+                      style={{ paddingLeft: 16 }}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label htmlFor="reg-activity">Tingkat Aktivitas</label>
+                <div className={styles.inputWrapper}>
+                  <select
+                    id="reg-activity"
+                    value={registerData.activity_level}
+                    onChange={(e) => setRegisterData({ ...registerData, activity_level: e.target.value })}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "12px",
+                      border: "1px solid var(--ag-border)",
+                      background: "var(--ag-surface)",
+                      fontSize: "14px",
+                      color: "var(--ag-on-surface)",
+                      outline: "none",
+                      appearance: "none",
+                      cursor: "pointer",
+                    }}
+                    required
+                  >
+                    <option value="sedentary">Sangat Jarang Olahraga</option>
+                    <option value="light">Jarang Olahraga (1-3 hari/minggu)</option>
+                    <option value="moderate">Normal Olahraga (3-5 hari/minggu)</option>
+                    <option value="active">Sering Olahraga (6-7 hari/minggu)</option>
+                    <option value="very_active">Sangat Sering Olahraga</option>
+                  </select>
+                  <svg className={styles.inputIcon} style={{ right: 16, left: "auto", color: "var(--ag-outline)", pointerEvents: "none" }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
+              </div>
               <button
                 type="submit"
                 className={styles.submitBtn}

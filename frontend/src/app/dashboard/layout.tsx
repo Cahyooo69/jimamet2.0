@@ -139,7 +139,11 @@ export default function DashboardLayout({
               </svg>
               <span className={styles.notifDot} />
             </button>
-            <div className={styles.avatar} onClick={handleLogout} title="Logout">
+            <button className={styles.logoutBtn} onClick={handleLogout} title="Logout" style={{ background: "none", border: "none", color: "var(--error)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", fontSize: "13px", fontWeight: "600", padding: "6px 10px", borderRadius: "8px", marginLeft: "8px" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              Logout
+            </button>
+            <div className={styles.avatar} onClick={() => router.push('/dashboard/profile')} title="Profil" style={{ cursor: "pointer", marginLeft: "12px" }}>
               <span>{userInitial}</span>
             </div>
           </div>
