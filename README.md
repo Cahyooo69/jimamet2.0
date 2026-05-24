@@ -121,4 +121,17 @@ Buka browser dan akses **`http://localhost:3000`**.
 
 ---
 
+## 🔑 Akun Uji Coba (Test Credentials)
+
+Untuk mencoba fitur aplikasi, Anda dapat menggunakan kredensial berikut:
+
+**👨‍⚕️ Ahli Gizi (Nutritionist Portal)**
+- **Username:** `drsarah`
+- **Password:** `Gizi1234!`
+
+**👤 Pasien (User Dashboard)**
+- *Belum ada akun default.* Silakan klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
+
+---
+
 Selamat mengembangkan! 🚀
