@@ -16,7 +16,6 @@ interface MealRecord {
   emoji: string;
 }
 
-// Fetches from real API, no fallback hardcoded data
 
 function formatDate(isoStr: string): string {
   const d = new Date(isoStr);
@@ -55,15 +54,15 @@ export default function HistoryPage() {
     apiListFoodRecords().then(({ ok, data }) => {
       if (ok && Array.isArray(data) && data.length > 0) {
         const mapped: MealRecord[] = data.map((r: Record<string, unknown>) => ({
-          id: r.id as number,
-          date: formatDate(r.consumed_at as string),
-          time: formatTime(r.consumed_at as string),
-          name: r.food_name as string,
-          calories: (r.calories as number) || 0,
+          id: r.id_food as number,
+          date: formatDate(r.tanggal as string),
+          time: formatTime(r.tanggal as string),
+          name: r.nama_makanan as string,
+          calories: (r.kalori as number) || 0,
           protein: (r.protein as number) || 0,
-          carbs: (r.carbs as number) || 0,
-          fat: (r.fat as number) || 0,
-          emoji: (r.emoji as string) || "🍽️",
+          carbs: (r.karbohidrat as number) || 0,
+          fat: (r.lemak as number) || 0,
+          emoji: "🍽️",
         }));
         setAllData(mapped);
       }

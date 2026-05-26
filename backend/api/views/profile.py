@@ -27,9 +27,9 @@ def get_profile(request):
                 'age': row.get('umur'),
                 'weight': row.get('berat_badan'),
                 'height': row.get('tinggi_badan'),
-                'gender': 'male',
+                'gender': row.get('jenis_kelamin'),
                 'activity_level': row.get('aktivitas_harian', 'moderate'),
-                'goal': 'maintain',
+                'goal': row.get('goal'),
             })
         else:
             return Response({
@@ -40,9 +40,9 @@ def get_profile(request):
                 'age': None,
                 'weight': None,
                 'height': None,
-                'gender': 'male',
+                'gender': None,
                 'activity_level': 'moderate',
-                'goal': 'maintain',
+                'goal': None,
             })
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

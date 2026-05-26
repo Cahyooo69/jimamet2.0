@@ -70,8 +70,8 @@ def register_user(request):
             'tinggi_badan': request.data.get('height', None),
             'aktivitas_harian': request.data.get('activity_level', 'moderate'),
         })
-    except Exception as e:
-        print(f'[Supabase] Profile create warning: {e}')
+    except Exception:
+        pass  # Profil Supabase gagal dibuat, akun Django tetap valid
 
     token, _ = Token.objects.get_or_create(user=user)
 
@@ -119,8 +119,8 @@ def login_user(request):
                         'no_str': ag.get('no_str', ''),
                     }
                 })
-    except Exception as e:
-        print(f'[AhliGizi] Login check error: {e}')
+    except Exception:
+        pass  # Tabel ahli_gizi tidak dapat diakses, lanjut ke Django auth
 
     # 2. Django auth for regular users
     user = authenticate(request, username=username, password=password)

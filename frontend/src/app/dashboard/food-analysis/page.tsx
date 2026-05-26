@@ -22,30 +22,11 @@ interface AnalysisResult {
   recommendation: string;
 }
 
-const dummyResults: Record<string, AnalysisResult> = {
-  default: {
-    foodName: "Nasi Goreng Spesial",
-    confidence: 94.2,
-    calories: 520,
-    portion: "1 porsi (300g)",
-    nutrients: [
-      { name: "Protein", value: 18, unit: "g", pct: 51, color: "#2e7d32" },
-      { name: "Karbohidrat", value: 62, unit: "g", pct: 83, color: "#4caf50" },
-      { name: "Lemak", value: 22, unit: "g", pct: 88, color: "#ff9800" },
-      { name: "Serat", value: 3, unit: "g", pct: 20, color: "#a5d6a7" },
-      { name: "Gula", value: 4, unit: "g", pct: 16, color: "#1b6d24" },
-      { name: "Sodium", value: 680, unit: "mg", pct: 45, color: "#f44336" },
-    ],
-    tags: ["Tinggi Karbo", "Sumber Protein", "Perhatian Sodium"],
-    recommendation:
-      "Nasi goreng ini mengandung kalori cukup tinggi. Untuk keseimbangan, tambahkan porsi sayuran hijau dan kurangi kecap asin untuk menurunkan sodium.",
-  },
-};
 
 export default function FoodAnalysisPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,19 +55,16 @@ export default function FoodAnalysisPage() {
 
   const analyzeImage = () => {
     if (!selectedImage) return;
-    setIsAnalyzing(true);
-    // Simulate AI analysis
-    setTimeout(() => {
-      setResult(dummyResults.default);
-      setIsAnalyzing(false);
-    }, 2500);
+    // Fitur analisis AI belum terhubung ke backend.
+    // Set result ke null agar UI menampilkan empty state yang jujur.
+    setResult(null);
+    alert("Fitur analisis AI sedang dalam pengembangan. Silakan input data nutrisi secara manual melalui Riwayat.");
   };
 
   const resetAll = () => {
     setSelectedImage(null);
     setFileName("");
     setResult(null);
-    setIsAnalyzing(false);
     setSaveStatus("");
   };
 
