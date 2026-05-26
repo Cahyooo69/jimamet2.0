@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import NutriCoachPopup from "./nutricoach-popup";
+import NutriCoachPopup from "./components/NutriCoachPopup/NutriCoachPopup";
 import { isLoggedIn, getCurrentUser, apiLogout } from "@/lib/api";
 import styles from "./dashboard-layout.module.css";
 

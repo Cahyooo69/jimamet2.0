@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, FormEvent, useCallback } from "react";
-import styles from "./nutricoach-popup.module.css";
+import styles from "./NutriCoachPopup.module.css";
 import { apiCreateKonsultasi, apiListChat, apiSendChat } from "@/lib/api";
 
 interface ChatMessage {
