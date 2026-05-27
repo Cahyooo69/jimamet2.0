@@ -31,6 +31,9 @@ from api.views.konsultasi import (
     send_chat,
     delete_chat,
 )
+from api.views.coachbot import (
+    coachbot_chat,
+)
 
 __all__ = [
     'health_check',
@@ -40,4 +43,5 @@ __all__ = [
     'dashboard_summary',
     'create_konsultasi', 'list_konsultasi', 'update_konsultasi', 'delete_konsultasi',
     'list_chat', 'send_chat', 'delete_chat',
+    'coachbot_chat',
 ]

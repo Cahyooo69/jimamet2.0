@@ -6,11 +6,11 @@ import styles from "./page.module.css";
 
 /* ───────── Intersection Observer Hook ───────── */
 function useInView(threshold = 0.15) {
-  const ref = useRef<HTMLDivElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
 
   useEffect(() => {
-    const el = ref.current;
+    const el = nodeRef.current;
     if (!el) return;
     const obs = new IntersectionObserver(
       ([entry]) => {
@@ -25,7 +25,7 @@ function useInView(threshold = 0.15) {
     return () => obs.disconnect();
   }, [threshold]);
 
-  return { ref, isInView };
+  return { nodeRef, isInView };
 }
 
 /* ───────── Animated Counter ───────── */
@@ -268,7 +268,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FEATURES ── */}
-      <section id="features" className={styles.features} ref={featuresSection.ref}>
+      <section id="features" className={styles.features} ref={featuresSection.nodeRef}>
         <div className="container">
           <div className={styles.sectionHeader}>
             <span className={`label-md ${styles.sectionTag}`}>FITUR UNGGULAN</span>
@@ -307,7 +307,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" className={styles.howItWorks} ref={stepsSection.ref}>
+      <section id="how-it-works" className={styles.howItWorks} ref={stepsSection.nodeRef}>
         <div className="container">
           <div className={styles.sectionHeader}>
             <span className={`label-md ${styles.sectionTag}`}>CARA KERJA</span>
@@ -338,7 +338,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── STATS ── */}
-      <section id="stats" className={styles.stats} ref={statsSection.ref}>
+      <section id="stats" className={styles.stats} ref={statsSection.nodeRef}>
         <div className="container">
           <div className={styles.statsGrid}>
             {stats.map((s, i) => (
@@ -358,7 +358,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className={styles.cta} ref={ctaSection.ref}>
+      <section className={styles.cta} ref={ctaSection.nodeRef}>
         <div className="container">
           <div className={`${styles.ctaCard} ${ctaSection.isInView ? "animate-scale-in" : ""}`} style={{ opacity: ctaSection.isInView ? undefined : 0 }}>
             <div className={styles.ctaOrb} />

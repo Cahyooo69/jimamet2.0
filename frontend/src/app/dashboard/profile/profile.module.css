@@ -8,11 +8,14 @@
 .subtitle { font-size: 15px; color: var(--on-surface-variant); margin-top: 4px; }
 
 /* Content Grid */
-.content { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
+.content { 
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: stretch;
+}
 
-/* ── Form Section ── */
-.formSection { display: flex; flex-direction: column; gap: 20px; }
-
+/* ── Form Cards (Left Side) ── */
 .card {
   background: var(--surface-container-lowest); border: 1px solid var(--surface-container-high);
   border-radius: var(--radius-lg); padding: 28px; display: flex; flex-direction: column; gap: 20px;
@@ -80,7 +83,12 @@
 .goalDesc { font-size: 11px; color: var(--outline); }
 
 /* ── Save ── */
-.saveBar { display: flex; justify-content: flex-end; }
+.saveBar { 
+  grid-column: 1 / -1;
+  display: flex; 
+  justify-content: flex-end; 
+  margin-top: 8px;
+}
 
 .saveBtn {
   padding: 12px 36px; background: var(--primary-container); color: white;
@@ -89,9 +97,6 @@
 }
 
 .saveBtn:hover { background: var(--primary); transform: translateY(-1px); }
-
-/* ── Sidebar ── */
-.sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 96px; }
 
 /* Avatar Card */
 .avatarCard {
@@ -173,12 +178,9 @@
 /* ═══ Responsive ═══ */
 @media (max-width: 1000px) {
   .content { grid-template-columns: 1fr; }
-  .sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
-  .sidebar > * { flex: 1; min-width: 200px; }
 }
 
 @media (max-width: 600px) {
   .fieldGrid { grid-template-columns: 1fr; }
   .goalOptions { grid-template-columns: 1fr; }
-  .sidebar { flex-direction: column; }
 }

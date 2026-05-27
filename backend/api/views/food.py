@@ -71,7 +71,7 @@ def get_food_record(request, record_id):
     """Get a single food record."""
     try:
         rows = supabase.select('food_analysis', {
-            'id_food': f'eq.{record_id}',
+            'id_analysis': f'eq.{record_id}',
             'id_user': f'eq.{request.user.id}',
         })
         if not rows:
@@ -87,7 +87,7 @@ def delete_food_record(request, record_id):
     """Delete a food record."""
     try:
         supabase.delete('food_analysis', {
-            'id_food': record_id,
+            'id_analysis': record_id,
             'id_user': str(request.user.id),
         })
         return Response({'message': 'Record deleted.'}, status=status.HTTP_204_NO_CONTENT)

@@ -16,6 +16,7 @@ export default function DashboardPage() {
     total_carbs: 0,
     total_fat: 0,
     meals: [] as any[],
+    weekly_data: [] as { date: string; calories: number }[],
   });
 
   useEffect(() => {
@@ -74,10 +75,28 @@ export default function DashboardPage() {
     { name: "Lemak", pct: Math.round((fat / totalMacros) * 100), color: "#a5d6a7" },
   ];
 
-  // Chart kalori: hanya hari ini dengan data real
-  const calorieData = [{ day: "Hari Ini", value: cals, target }];
+  // Chart kalori: 7 hari terakhir
+  const calorieData = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    
+    // Ensure accurate local ISO string for timezone matching
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - (offset*60*1000));
+    const isoDate = localDate.toISOString().split('T')[0];
+    
+    const dayName = d.toLocaleDateString("id-ID", { weekday: "short" });
+    
+    const apiDay = summary.weekly_data?.find(w => w.date === isoDate);
+    const val = apiDay ? apiDay.calories : 0;
+    
+    if (i === 6) {
+      return { day: "Hari Ini", value: cals, target: target };
+    }
+    return { day: dayName, value: val, target: target };
+  });
 
-  function DonutChart() {
+  function renderDonutChart() {
     const size = 160, cx = size / 2, cy = size / 2, r = 60;
     const circumference = 2 * Math.PI * r;
     let offset = 0;
@@ -120,7 +139,7 @@ export default function DashboardPage() {
     );
   }
 
-  function BarChart() {
+  function renderBarChart() {
     const maxVal = 2500, barW = 36, gap = 20, chartH = 180;
     const chartW = calorieData.length * (barW + gap);
 
@@ -194,13 +213,13 @@ export default function DashboardPage() {
           <div className={styles.chartHeader}>
             <div><h3>Tren Kalori 7 Hari Terakhir</h3></div>
           </div>
-          <BarChart />
+          {renderBarChart()}
         </div>
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div><h3>Distribusi Nutrisi Hari Ini</h3></div>
           </div>
-          <DonutChart />
+          {renderDonutChart()}
         </div>
       </div>
 

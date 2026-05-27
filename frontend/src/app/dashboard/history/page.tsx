@@ -5,7 +5,7 @@ import styles from "./history.module.css";
 import { apiListFoodRecords } from "@/lib/api";
 
 interface MealRecord {
-  id: number;
+  id: string;
   date: string;
   time: string;
   name: string;
@@ -54,7 +54,7 @@ export default function HistoryPage() {
     apiListFoodRecords().then(({ ok, data }) => {
       if (ok && Array.isArray(data) && data.length > 0) {
         const mapped: MealRecord[] = data.map((r: Record<string, unknown>) => ({
-          id: r.id_food as number,
+          id: (r.id_analysis as string) || Math.random().toString(),
           date: formatDate(r.tanggal as string),
           time: formatTime(r.tanggal as string),
           name: r.nama_makanan as string,

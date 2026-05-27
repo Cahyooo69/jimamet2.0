@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent, useCallback } from "react";
 import styles from "./NutriCoachPopup.module.css";
-import { apiCreateKonsultasi, apiListChat, apiSendChat } from "@/lib/api";
+import { apiCreateKonsultasi, apiListChat, apiSendChat, apiCoachbotChat } from "@/lib/api";
 
 interface ChatMessage {
   role: "ai" | "user";
@@ -81,7 +81,7 @@ export default function NutriCoachPopup() {
     if (isOpen) setHasNewMessage(false);
   }, [isOpen]);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: ChatMessage = { role: "user", text, time: getTimeStr() };
@@ -89,35 +89,41 @@ export default function NutriCoachPopup() {
     setInput("");
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        "Analisis nutrisi hari ini":
-          "📊 Berdasarkan data hari ini:\n\n• Kalori: 1,430 / 2,000 kkal (71.5%)\n• Protein: 28g / 35g (80%) ✅\n• Karbohidrat: 45g / 50g (90%) ✅\n• Lemak: 22g / 25g (88%) ✅\n• Serat: 8g / 15g (53%) ⚠️\n\nSerat Anda masih kurang. Coba tambahkan sayuran hijau atau buah-buahan untuk makan malam.",
-        "Rekomendasi makan malam":
-          "🍽️ Untuk makan malam, saya rekomendasikan:\n\n1. **Sup Sayur + Tempe Goreng** (~350 kkal)\n   Kaya serat dan protein nabati\n\n2. **Ayam Panggang + Brokoli** (~420 kkal)\n   Tinggi protein untuk recovery\n\n3. **Pecel Lele + Lalapan** (~380 kkal)\n   Seimbang dengan sayuran segar",
-        "Tips diet sehat":
-          "💡 Tips diet sehat:\n\n1. Makan teratur — 3 makan utama + 2 snack\n2. Perbanyak serat — target 15g/hari\n3. Hidrasi cukup — minum 2.5L air per hari\n4. Protein seimbang — kombinasi hewani & nabati\n5. Batasi gula — maksimal 25g gula tambahan/hari",
-      };
-
-      const needsKonsultasi = shouldSuggestKonsultasi(text);
-
-      const aiText =
-        responses[text] ||
-        (needsKonsultasi
-          ? `Terima kasih sudah berbagi kondisi Anda. 🤔\n\nBerdasarkan yang Anda ceritakan, saya menyarankan untuk berkonsultasi langsung dengan Ahli Gizi kami agar mendapatkan penanganan yang lebih tepat dan personal.\n\nKlik tombol di bawah untuk menghubungi Ahli Gizi sekarang.`
-          : `Terima kasih untuk pertanyaannya! 🤔\n\nBerdasarkan profil nutrisi Anda hari ini, asupan sudah cukup baik. Saya sarankan untuk fokus menambah serat dan air minum untuk mencapai target harian.\n\nAda pertanyaan lain?`);
-
+    try {
+      const res = await apiCoachbotChat(text);
+      if (res.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "ai",
+            text: res.data.reply,
+            time: getTimeStr(),
+            showKonsultasiBtn: res.data.needs_consultation,
+          },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "ai",
+            text: "Maaf, sistem AI sedang mengalami kendala. Silakan coba beberapa saat lagi.",
+            time: getTimeStr(),
+            showKonsultasiBtn: false,
+          },
+        ]);
+      }
+    } catch (e) {
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: aiText,
+          text: "Terjadi kesalahan jaringan.",
           time: getTimeStr(),
-          showKonsultasiBtn: needsKonsultasi && !responses[text],
         },
       ]);
+    } finally {
       setIsTyping(false);
-    }, 1200 + Math.random() * 800);
+    }
   };
 
   // Poll chat messages every 5 seconds when in chat mode

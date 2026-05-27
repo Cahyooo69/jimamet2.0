@@ -2,6 +2,7 @@
 
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import styles from "./login.module.css";
 import { apiLogin, apiRegister } from "@/lib/api";
 
@@ -129,7 +130,7 @@ function LoginForm() {
           className={styles.leftImage}
         />
         <div className={styles.leftContent}>
-          <a href="/" className={styles.leftLogo}>
+          <Link href="/" className={styles.leftLogo}>
             <svg viewBox="0 0 32 32" fill="none" width="32" height="32">
               <circle cx="16" cy="16" r="14" fill="white" fillOpacity="0.2" />
               <circle cx="16" cy="16" r="12" fill="white" fillOpacity="0.3" />
@@ -141,7 +142,7 @@ function LoginForm() {
               <path d="M16 10v10" stroke="#2e7d32" strokeWidth="1.2" />
             </svg>
             <span>Jimamet</span>
-          </a>
+          </Link>
           <div className={styles.leftText}>
             <h1>Nutrisi Klinis di Ujung Jari Anda</h1>
             <p>
