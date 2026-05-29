@@ -6,6 +6,7 @@ Proyek ini dibangun menggunakan:
 - **Frontend**: Next.js (React), TypeScript, CSS Modules
 - **Backend**: Django (Python), Django REST Framework
 - **Database**: Supabase (PostgreSQL)
+- **AI Engine**: Google Gemini 2.5 Flash (untuk NutriCoach AI)
 
 ---
 
@@ -60,17 +61,20 @@ pip install -r requirements.txt
 
 **Konfigurasi Environment Backend:**
 1. Duplikat/copy file `backend/.env.example` dan ubah namanya menjadi `backend/.env` (jika belum ada).
-2. Isi nilai yang ada di `.env` sesuai dengan kredensial Supabase Anda:
+2. Isi nilai yang ada di `.env` sesuai dengan kredensial Supabase dan Gemini AI Anda:
    ```env
    SECRET_KEY=your-django-secret-key-here
    DEBUG=True
    ALLOWED_HOSTS=localhost,127.0.0.1
+   CORS_ALLOWED_ORIGINS=http://localhost:3000
+   
    SUPABASE_URL=https://[YOUR_PROJECT_REF].supabase.co
    SUPABASE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY]
    SUPABASE_REST_URL=https://[YOUR_PROJECT_REF].supabase.co/rest/v1
-   CORS_ALLOWED_ORIGINS=http://localhost:3000
+   
+   GEMINI_API_KEY=your-google-gemini-api-key
    ```
-*(Catatan: `SUPABASE_REST_URL` digunakan untuk panggilan REST API aplikasi.)*
+*(Catatan: `SUPABASE_REST_URL` digunakan untuk panggilan REST API aplikasi, sedangkan `GEMINI_API_KEY` digunakan untuk fitur AI CoachBot).*
 
 **Jalankan Migrasi Database Lokal (SQLite):**
 ```bash

@@ -16,6 +16,7 @@ export default function DashboardPage() {
     total_carbs: 0,
     total_fat: 0,
     meals: [] as any[],
+    weekly_data: [] as { date: string; calories: number }[],
   });
 
   useEffect(() => {
@@ -43,23 +44,28 @@ export default function DashboardPage() {
     return new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
   };
 
-  // ── Derived Data ──
-  const target = summary.target_calories || 2000;
+  // Target nutrisi harian (standar umum — bisa diambil dari profil user di iterasi berikutnya)
+  const DEFAULT_CALORIE_TARGET = 2000;
+  const DEFAULT_PROTEIN_TARGET = 60;  // gram
+  const DEFAULT_CARB_TARGET = 200;    // gram
+  const DEFAULT_FAT_TARGET = 60;      // gram
+  const DEFAULT_FIBER_TARGET = 25;    // gram
+
+  const target = summary.target_calories || DEFAULT_CALORIE_TARGET;
   const cals = summary.total_calories || 0;
   const calPct = Math.min((cals / target) * 100, 100);
 
   const prot = Number(summary.total_protein) || 0;
-  const protTarget = 60; // default target
-  const protPct = Math.min((prot / protTarget) * 100, 100);
+  const protPct = Math.min((prot / DEFAULT_PROTEIN_TARGET) * 100, 100);
 
   const carbs = Number(summary.total_carbs) || 0;
   const fat = Number(summary.total_fat) || 0;
 
   const macroData = [
-    { name: "Protein", value: prot, target: protTarget, color: "#2e7d32", unit: "g" },
-    { name: "Karbo", value: carbs, target: 200, color: "#4caf50", unit: "g" },
-    { name: "Lemak", value: fat, target: 60, color: "#a5d6a7", unit: "g" },
-    { name: "Serat", value: 0, target: 25, color: "#1b6d24", unit: "g" }, // no fiber in new schema
+    { name: "Protein", value: prot, target: DEFAULT_PROTEIN_TARGET, color: "#2e7d32", unit: "g" },
+    { name: "Karbo", value: carbs, target: DEFAULT_CARB_TARGET, color: "#4caf50", unit: "g" },
+    { name: "Lemak", value: fat, target: DEFAULT_FAT_TARGET, color: "#a5d6a7", unit: "g" },
+    { name: "Serat", value: 0, target: DEFAULT_FIBER_TARGET, color: "#1b6d24", unit: "g" },
   ];
 
   const totalMacros = prot + carbs + fat || 1;
@@ -69,18 +75,28 @@ export default function DashboardPage() {
     { name: "Lemak", pct: Math.round((fat / totalMacros) * 100), color: "#a5d6a7" },
   ];
 
-  // Dummy 7 days for the chart
-  const calorieData = [
-    { day: "Sen", value: 1850, target: 2000 },
-    { day: "Sel", value: 2100, target: 2000 },
-    { day: "Rab", value: 1750, target: 2000 },
-    { day: "Kam", value: 1950, target: 2000 },
-    { day: "Jum", value: 2200, target: 2000 },
-    { day: "Sab", value: 1680, target: 2000 },
-    { day: "Min", value: cals, target: target }, // Use real data for today
-  ];
+  // Chart kalori: 7 hari terakhir
+  const calorieData = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    
+    // Ensure accurate local ISO string for timezone matching
+    const offset = d.getTimezoneOffset();
+    const localDate = new Date(d.getTime() - (offset*60*1000));
+    const isoDate = localDate.toISOString().split('T')[0];
+    
+    const dayName = d.toLocaleDateString("id-ID", { weekday: "short" });
+    
+    const apiDay = summary.weekly_data?.find(w => w.date === isoDate);
+    const val = apiDay ? apiDay.calories : 0;
+    
+    if (i === 6) {
+      return { day: "Hari Ini", value: cals, target: target };
+    }
+    return { day: dayName, value: val, target: target };
+  });
 
-  function DonutChart() {
+  function renderDonutChart() {
     const size = 160, cx = size / 2, cy = size / 2, r = 60;
     const circumference = 2 * Math.PI * r;
     let offset = 0;
@@ -123,7 +139,7 @@ export default function DashboardPage() {
     );
   }
 
-  function BarChart() {
+  function renderBarChart() {
     const maxVal = 2500, barW = 36, gap = 20, chartH = 180;
     const chartW = calorieData.length * (barW + gap);
 
@@ -186,18 +202,9 @@ export default function DashboardPage() {
           <div className={styles.statInfo}>
             <span className={styles.statLabel}>Protein</span>
             <span className={styles.statValue}>{prot}g</span>
-            <span className={styles.statMeta}>/ {protTarget}g target</span>
+            <span className={styles.statMeta}>/ {DEFAULT_PROTEIN_TARGET}g target</span>
           </div>
           <div className={styles.statProgress}><div style={{ width: `${protPct}%`, background: "linear-gradient(90deg, #4caf50, #a5d6a7)" }} /></div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={styles.statIcon} style={{ background: "rgba(255,152,0,0.08)", color: "#ff9800" }}>😊</div>
-          <div className={styles.statInfo}>
-            <span className={styles.statLabel}>Mood Nutrisi</span>
-            <span className={styles.statValue}>Baik</span>
-            <span className={styles.statMeta}>Seimbang hari ini</span>
-          </div>
-          <div className={styles.statProgress}><div style={{ width: "85%", background: "linear-gradient(90deg, #ff9800, #ffb74d)" }} /></div>
         </div>
       </div>
 
@@ -206,13 +213,13 @@ export default function DashboardPage() {
           <div className={styles.chartHeader}>
             <div><h3>Tren Kalori 7 Hari Terakhir</h3></div>
           </div>
-          <BarChart />
+          {renderBarChart()}
         </div>
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <div><h3>Distribusi Nutrisi Hari Ini</h3></div>
           </div>
-          <DonutChart />
+          {renderDonutChart()}
         </div>
       </div>
 
@@ -233,10 +240,10 @@ export default function DashboardPage() {
                 <div key={i} className={styles.mealItem}>
                   <span className={styles.mealEmoji}>🍽️</span>
                   <div className={styles.mealInfo}>
-                    <span className={styles.mealName}>{meal.food_name}</span>
-                    <span className={styles.mealTime}>{formatTime(meal.consumed_at)}</span>
+                    <span className={styles.mealName}>{meal.nama_makanan}</span>
+                    <span className={styles.mealTime}>{formatTime(meal.tanggal)}</span>
                   </div>
-                  <span className={styles.mealCal}>{meal.calories} kkal</span>
+                  <span className={styles.mealCal}>{meal.kalori} kkal</span>
                 </div>
               ))
             )}
