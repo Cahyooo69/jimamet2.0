@@ -3,7 +3,7 @@ Jimamet API URL Configuration.
 """
 
 from django.urls import path
-from . import views
+from api import controllers as views
 
 urlpatterns = [
     # Health

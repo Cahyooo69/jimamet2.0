@@ -1,8 +1,8 @@
 """
-api/views/__init__.py
-Re-exports semua views sehingga api/urls.py bisa tetap pakai `from . import views`.
+api/controllers/__init__.py
+Re-exports semua controller views sehingga api/urls.py bisa pakai `from api import controllers`.
 """
-from api.views.auth import (
+from api.controllers.auth_controller import (
     health_check,
     register_user,
     login_user,
@@ -10,29 +10,29 @@ from api.views.auth import (
     get_current_user,
     supabase_webhook,
 )
-from api.views.profile import (
+from api.controllers.profile_controller import (
     get_profile,
     update_profile,
 )
-from api.views.food import (
+from api.controllers.analysis_controller import (
     list_food_records,
     create_food_record,
     get_food_record,
     delete_food_record,
-)
-from api.views.dashboard import (
     dashboard_summary,
 )
-from api.views.konsultasi import (
+from api.controllers.notification_controller import (
     create_konsultasi,
     list_konsultasi,
     update_konsultasi,
     delete_konsultasi,
+)
+from api.controllers.coachbot_controller import (
     list_chat,
     send_chat,
     delete_chat,
 )
-from api.views.coachbot import (
+from api.controllers.prediction_controller import (
     coachbot_chat,
 )
 

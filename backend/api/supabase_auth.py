@@ -2,6 +2,7 @@
 supabase_auth.py — Custom DRF authentication backend menggunakan Supabase.
 Menggantikan Django User model + rest_framework.authtoken sepenuhnya.
 """
+
 import secrets
 
 from django.contrib.auth.hashers import make_password, check_password as _check_password
@@ -10,8 +11,8 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from api.supabase_client import supabase
 
-
 # ── Password Utilities ──────────────────────────────────────────────────────
+
 
 def hash_password(raw_password: str) -> str:
     """Hash password menggunakan Django PBKDF2 hasher (aman)."""
@@ -30,22 +31,24 @@ def generate_token() -> str:
 
 # ── User Objects ─────────────────────────────────────────────────────────────
 
+
 class SupabaseUser:
     """
     Object user ringan yang dibackup oleh baris tabel 'users' di Supabase.
     id_user = BIGSERIAL (integer auto-increment)
     username = kolom terpisah (TEXT UNIQUE)
     """
+
     is_authenticated = True
     is_superuser = False
     is_staff = False
-    role = 'user'
+    role = "user"
 
     def __init__(self, row: dict):
-        self.id = row.get('id_user')          # integer (BIGSERIAL)
-        self.username = row.get('username', '')
-        self.email = row.get('email', '')
-        self._nama = row.get('nama', '')
+        self.id = row.get("id_user")  # integer (BIGSERIAL)
+        self.username = row.get("username", "")
+        self.email = row.get("email", "")
+        self._nama = row.get("nama", "")
 
     def get_full_name(self) -> str:
         return self._nama
@@ -56,16 +59,17 @@ class SupabaseUser:
 
 class AhliGiziUser:
     """Object user untuk ahli gizi, dibackup oleh tabel 'ahli_gizi' di Supabase."""
+
     is_authenticated = True
     is_superuser = False
     is_staff = False
-    role = 'ahli_gizi'
+    role = "ahli_gizi"
 
     def __init__(self, row: dict):
-        self.id = str(row.get('id_ahli_gizi', ''))
-        self.username = row.get('username', '')
-        self.email = row.get('email', '')
-        self._nama = row.get('nama', '')
+        self.id = str(row.get("id_ahli_gizi", ""))
+        self.username = row.get("username", "")
+        self.email = row.get("email", "")
+        self._nama = row.get("nama", "")
 
     def get_full_name(self) -> str:
         return self._nama
@@ -75,6 +79,7 @@ class AhliGiziUser:
 
 
 # ── DRF Authentication Class ─────────────────────────────────────────────────
+
 
 class SupabaseTokenAuthentication(BaseAuthentication):
     """
@@ -86,8 +91,8 @@ class SupabaseTokenAuthentication(BaseAuthentication):
     """
 
     def authenticate(self, request):
-        auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Token '):
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Token "):
             return None
 
         token = auth_header[6:].strip()
@@ -95,7 +100,7 @@ class SupabaseTokenAuthentication(BaseAuthentication):
             return None
 
         # Ahli gizi token: format 'ahligizi_<uuid>'
-        if token.startswith('ahligizi_'):
+        if token.startswith("ahligizi_"):
             return self._authenticate_ahli_gizi(token)
 
         # User biasa: cek di tabel users
@@ -103,26 +108,26 @@ class SupabaseTokenAuthentication(BaseAuthentication):
 
     def _authenticate_user(self, token: str):
         try:
-            rows = supabase.select('users', {'token': f'eq.{token}'})
+            rows = supabase.select("users", {"token": f"eq.{token}"})
             if not rows:
-                raise AuthenticationFailed('Token tidak valid atau sudah kedaluwarsa.')
+                raise AuthenticationFailed("Token tidak valid atau sudah kedaluwarsa.")
             return (SupabaseUser(rows[0]), token)
         except AuthenticationFailed:
             raise
         except Exception:
-            raise AuthenticationFailed('Gagal memverifikasi token.')
+            raise AuthenticationFailed("Gagal memverifikasi token.")
 
     def _authenticate_ahli_gizi(self, token: str):
         try:
-            ahli_id = token.replace('ahligizi_', '')
-            rows = supabase.select('ahli_gizi', {'id_ahli_gizi': f'eq.{ahli_id}'})
+            ahli_id = token.replace("ahligizi_", "")
+            rows = supabase.select("ahli_gizi", {"id_ahli_gizi": f"eq.{ahli_id}"})
             if not rows:
-                raise AuthenticationFailed('Token ahli gizi tidak valid.')
+                raise AuthenticationFailed("Token ahli gizi tidak valid.")
             return (AhliGiziUser(rows[0]), token)
         except AuthenticationFailed:
             raise
         except Exception:
-            raise AuthenticationFailed('Gagal memverifikasi token ahli gizi.')
+            raise AuthenticationFailed("Gagal memverifikasi token ahli gizi.")
 
     def authenticate_header(self, request):
-        return 'Token'
+        return "Token"
