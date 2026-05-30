@@ -27,10 +27,13 @@ class AnalysisService:
 
         Raises ValueError if required fields are missing.
         """
-        required = ["nama_makanan", "kalori"]
-        for field in required:
-            if field not in data:
-                raise ValueError(f"{field} is required.")
+        # Accept both API field names and DB column names
+        food_name = data.get("nama_makanan") or data.get("food_name")
+        calories = data.get("kalori") or data.get("calories")
+        if not food_name:
+            raise ValueError("food_name / nama_makanan is required.")
+        if calories is None:
+            raise ValueError("calories / kalori is required.")
 
         record = {
             "id_user": user_id,

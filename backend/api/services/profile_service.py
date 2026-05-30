@@ -66,7 +66,9 @@ class ProfileService:
             "age": "umur",
             "weight": "berat_badan",
             "height": "tinggi_badan",
+            "gender": "jenis_kelamin",
             "activity_level": "aktivitas_harian",
+            "goal": "goal",
         }
         mapped_data = {}
         for api_key, value in update_data.items():
