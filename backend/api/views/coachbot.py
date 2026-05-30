@@ -25,9 +25,9 @@ def coachbot_chat(request):
     genai.configure(api_key=api_key)
 
     try:
-        user_id = str(request.user.id)
+        user_id = request.user.id
         # Ambil data profil untuk target kalori
-        profile_rows = supabase.select('users', {'email': f'eq.{request.user.email}'})
+        profile_rows = supabase.select('users', {'id_user': f'eq.{request.user.id}'})
         target_calories = 2000
         if profile_rows:
             p = profile_rows[0]

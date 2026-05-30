@@ -16,7 +16,7 @@ from api.supabase_client import supabase
 def list_food_records(request):
     """List all food consumption records for the current user."""
     try:
-        user_id = str(request.user.id)
+        user_id = request.user.id
         params = {
             'id_user': f'eq.{user_id}',
             'order': 'tanggal.desc',
@@ -48,7 +48,7 @@ def create_food_record(request):
             )
 
     record = {
-        'id_user': str(request.user.id),
+        'id_user': request.user.id,
         'nama_makanan': request.data.get('nama_makanan') or request.data.get('food_name'),
         'kalori': request.data.get('kalori') or request.data.get('calories', 0),
         'protein': request.data.get('protein', 0),
@@ -88,7 +88,7 @@ def delete_food_record(request, record_id):
     try:
         supabase.delete('food_analysis', {
             'id_analysis': record_id,
-            'id_user': str(request.user.id),
+            'id_user': request.user.id,
         })
         return Response({'message': 'Record deleted.'}, status=status.HTTP_204_NO_CONTENT)
     except Exception as e:

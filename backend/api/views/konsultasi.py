@@ -22,7 +22,7 @@ def create_konsultasi(request):
         return Response({'error': 'pesan_coachbot is required.'}, status=400)
     try:
         res = supabase.insert('konsultasi', {
-            'id_user': str(request.user.id),
+            'id_user': request.user.id,
             'pesan_coachbot': pesan,
             'status': 'menunggu',
             'catatan_ahli_gizi': '',

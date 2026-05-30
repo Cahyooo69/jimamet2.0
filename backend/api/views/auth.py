@@ -42,7 +42,7 @@ def register_user(request):
 
     # Cek username duplikat
     try:
-        if supabase.select('users', {'id_user': f'eq.{username}'}):
+        if supabase.select('users', {'username': f'eq.{username}'}):
             return Response(
                 {'error': 'Username sudah digunakan.'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -65,8 +65,8 @@ def register_user(request):
     token = generate_token()
 
     try:
-        supabase.insert('users', {
-            'id_user': username,           # username = primary key
+        result = supabase.insert('users', {
+            'username': username,          # kolom terpisah
             'nama': full_name,
             'email': email,
             'password': password_hash,
@@ -79,11 +79,14 @@ def register_user(request):
     except Exception as e:
         return Response({'error': f'Gagal membuat akun: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    # id_user auto-generated oleh Supabase (BIGSERIAL)
+    user_id = result.get('id_user') if isinstance(result, dict) else None
+
     return Response({
         'message': 'Registrasi berhasil.',
         'token': token,
         'user': {
-            'id': username,
+            'id': user_id,
             'username': username,
             'email': email,
             'full_name': full_name,
@@ -126,9 +129,9 @@ def login_user(request):
     except Exception:
         pass
 
-    # 2. Cek tabel users di Supabase
+    # 2. Cek tabel users di Supabase berdasarkan username
     try:
-        rows = supabase.select('users', {'id_user': f'eq.{username}'})
+        rows = supabase.select('users', {'username': f'eq.{username}'})
     except Exception as e:
         return Response({'error': f'Gagal mengakses database: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -143,7 +146,7 @@ def login_user(request):
     # Rotate token setiap login (keamanan)
     new_token = generate_token()
     try:
-        supabase.update('users', {'id_user': username}, {'token': new_token})
+        supabase.update('users', {'id_user': user_row['id_user']}, {'token': new_token})
     except Exception as e:
         return Response({'error': f'Gagal memperbarui token: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -151,8 +154,8 @@ def login_user(request):
         'message': 'Login berhasil.',
         'token': new_token,
         'user': {
-            'id': username,
-            'username': username,
+            'id': user_row.get('id_user'),
+            'username': user_row.get('username'),
             'email': user_row.get('email', ''),
             'full_name': user_row.get('nama', ''),
         }

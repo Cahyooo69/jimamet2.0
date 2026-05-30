@@ -33,7 +33,8 @@ def generate_token() -> str:
 class SupabaseUser:
     """
     Object user ringan yang dibackup oleh baris tabel 'users' di Supabase.
-    Menggantikan django.contrib.auth.models.User pada request.user.
+    id_user = BIGSERIAL (integer auto-increment)
+    username = kolom terpisah (TEXT UNIQUE)
     """
     is_authenticated = True
     is_superuser = False
@@ -41,9 +42,8 @@ class SupabaseUser:
     role = 'user'
 
     def __init__(self, row: dict):
-        # id_user = username (TEXT PRIMARY KEY di Supabase)
-        self.id = row.get('id_user', '')
-        self.username = row.get('id_user', '')
+        self.id = row.get('id_user')          # integer (BIGSERIAL)
+        self.username = row.get('username', '')
         self.email = row.get('email', '')
         self._nama = row.get('nama', '')
 
