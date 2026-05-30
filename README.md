@@ -138,4 +138,69 @@ Untuk mencoba fitur aplikasi, Anda dapat menggunakan kredensial berikut:
 
 ---
 
+## 🗄️ Manajemen Data User (SQLite ↔ Supabase)
+
+Sistem ini menggunakan **dua database**:
+- **Django SQLite** (`backend/db.sqlite3`) — menyimpan akun & autentikasi user
+- **Supabase** — menyimpan profil & data user (sumber kebenaran / *source of truth*)
+
+> ⚠️ Jika kamu menghapus user di Supabase, data di SQLite **tidak otomatis terhapus**. Gunakan cara-cara di bawah untuk sinkronisasi manual.
+
+### Cara Hapus User dari SQLite
+
+**Opsi 1 — Django Shell (hapus 1 user):**
+```bash
+cd backend
+python manage.py shell
+```
+```python
+from django.contrib.auth.models import User
+
+user = User.objects.get(username="nama_user")  # cari berdasarkan username
+try:
+    user.auth_token.delete()  # hapus token login dulu
+except Exception:
+    pass
+user.delete()  # hapus user dari SQLite
+exit()
+```
+
+**Opsi 2 — Management Command `sync_users` (hapus semua orphan sekaligus):**
+
+Orphan = user yang ada di SQLite tapi **sudah dihapus dari Supabase**.
+
+```bash
+cd backend
+
+# Lihat siapa saja yang perlu dihapus (dry-run, aman, tidak ada yang dihapus)
+python manage.py sync_users
+
+# Hapus semua orphan user dari SQLite secara permanen
+python manage.py sync_users --delete
+```
+
+### Sinkronisasi Otomatis
+
+Sistem sudah dilengkapi sync otomatis pada dua titik:
+
+| Aksi User | Perilaku Sistem |
+|---|---|
+| User dihapus dari Supabase → **coba login** | Login ditolak, Django user & token auto-dihapus dari SQLite |
+| User dihapus dari Supabase → **coba register ulang** | Django user lama (orphan) di-cleanup otomatis, registrasi baru berhasil |
+
+---
+
+## 🔑 Akun Uji Coba (Test Credentials)
+
+Untuk mencoba fitur aplikasi, Anda dapat menggunakan kredensial berikut:
+
+**👨‍⚕️ Ahli Gizi (Nutritionist Portal)**
+- **Username:** `drsarah`
+- **Password:** `Gizi1234!`
+
+**👤 Pasien (User Dashboard)**
+- *Belum ada akun default.* Silakan klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
+
+---
+
 Selamat mengembangkan! 🚀
