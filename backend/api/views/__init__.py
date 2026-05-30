@@ -8,6 +8,7 @@ from api.views.auth import (
     login_user,
     logout_user,
     get_current_user,
+    supabase_webhook,
 )
 from api.views.profile import (
     get_profile,
@@ -37,7 +38,7 @@ from api.views.coachbot import (
 
 __all__ = [
     'health_check',
-    'register_user', 'login_user', 'logout_user', 'get_current_user',
+    'register_user', 'login_user', 'logout_user', 'get_current_user', 'supabase_webhook',
     'get_profile', 'update_profile',
     'list_food_records', 'create_food_record', 'get_food_record', 'delete_food_record',
     'dashboard_summary',

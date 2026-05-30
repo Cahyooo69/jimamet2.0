@@ -1,6 +1,10 @@
 """
-Auth views: register, login, logout, me.
+Auth views: register, login, logout, me, supabase_webhook.
 """
+import hashlib
+import hmac
+
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
@@ -219,3 +223,57 @@ def get_current_user(request):
         'email': user.email,
         'full_name': user.get_full_name(),
     })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def supabase_webhook(request):
+    """
+    Endpoint yang dipanggil otomatis oleh Supabase Database Webhook
+    saat ada event DELETE pada tabel 'users'.
+    Menghapus Django user dari SQLite secara real-time.
+    """
+    # Verifikasi webhook secret agar tidak sembarang request bisa masuk
+    webhook_secret = getattr(settings, 'SUPABASE_WEBHOOK_SECRET', '')
+    if webhook_secret:
+        incoming_secret = request.headers.get('x-webhook-secret', '')
+        if not hmac.compare_digest(incoming_secret, webhook_secret):
+            return Response(
+                {'error': 'Unauthorized webhook request.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+    payload = request.data
+    event_type = payload.get('type', '')   # INSERT | UPDATE | DELETE
+    table = payload.get('table', '')
+
+    # Hanya proses event DELETE pada tabel users
+    if event_type != 'DELETE' or table != 'users':
+        return Response({'message': 'Event ignored.'}, status=status.HTTP_200_OK)
+
+    old_record = payload.get('old_record', {})
+    id_user = old_record.get('id_user')
+
+    if not id_user:
+        return Response(
+            {'error': 'id_user tidak ditemukan di payload.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        django_user = User.objects.get(id=id_user)
+        username = django_user.username
+        try:
+            django_user.auth_token.delete()
+        except Exception:
+            pass
+        django_user.delete()
+        return Response({
+            'message': f'User "{username}" (id={id_user}) berhasil dihapus dari SQLite.'
+        }, status=status.HTTP_200_OK)
+    except User.DoesNotExist:
+        # Tidak ada di SQLite — tidak perlu aksi
+        return Response(
+            {'message': f'User id={id_user} tidak ditemukan di SQLite, tidak ada yang dihapus.'},
+            status=status.HTTP_200_OK
+        )

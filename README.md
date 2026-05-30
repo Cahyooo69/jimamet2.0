@@ -144,11 +144,58 @@ Sistem ini menggunakan **dua database**:
 - **Django SQLite** (`backend/db.sqlite3`) — menyimpan akun & autentikasi user
 - **Supabase** — menyimpan profil & data user (sumber kebenaran / *source of truth*)
 
-> ⚠️ Jika kamu menghapus user di Supabase, data di SQLite **tidak otomatis terhapus**. Gunakan cara-cara di bawah untuk sinkronisasi manual.
+### ⚡ Sinkronisasi Otomatis via Supabase Webhook
 
-### Cara Hapus User dari SQLite
+Saat user dihapus dari Supabase, sistem dapat **otomatis** menghapus Django user dari SQLite menggunakan **Supabase Database Webhook**.
 
-**Opsi 1 — Django Shell (hapus 1 user):**
+#### Cara Setup (sekali saja):
+
+**Langkah 1 — Isi `.env` backend:**
+```env
+SUPABASE_WEBHOOK_SECRET=isi-bebas-kata-sandi-rahasia
+```
+
+**Langkah 2 — Buka Supabase Dashboard:**
+1. Masuk ke [https://supabase.com/dashboard](https://supabase.com/dashboard)
+2. Pilih project → **Database** → **Webhooks**
+3. Klik **"Create a new webhook"**
+
+**Langkah 3 — Konfigurasi webhook:**
+
+| Field | Nilai |
+|---|---|
+| **Name** | `sync-delete-django-user` |
+| **Table** | `users` |
+| **Events** | ✅ `DELETE` saja |
+| **Type** | HTTP Request |
+| **Method** | `POST` |
+| **URL** | `http://<IP-SERVER-KAMU>:8000/api/auth/webhook/supabase/` |
+
+**Langkah 4 — Tambah HTTP Header (untuk keamanan):**
+
+| Header | Value |
+|---|---|
+| `x-webhook-secret` | nilai `SUPABASE_WEBHOOK_SECRET` di `.env` |
+
+**Langkah 5 — Klik "Create webhook" → Selesai!** ✅
+
+Sekarang setiap kali user dihapus dari Supabase, Django user di SQLite akan **langsung terhapus otomatis**.
+
+---
+
+> ⚠️ **Catatan untuk development lokal:** Supabase tidak bisa memanggil `localhost`. Gunakan [ngrok](https://ngrok.com/) untuk expose server lokal:
+> ```bash
+> ngrok http 8000
+> # Gunakan URL ngrok (contoh: https://abc123.ngrok-free.app) sebagai base URL webhook
+> ```
+
+---
+
+### 🔧 Sinkronisasi Manual (alternatif / cadangan)
+
+Jika webhook belum disetup, gunakan cara manual berikut:
+
+**Hapus 1 user via Django Shell:**
 ```bash
 cd backend
 python manage.py shell
@@ -156,32 +203,29 @@ python manage.py shell
 ```python
 from django.contrib.auth.models import User
 
-user = User.objects.get(username="nama_user")  # cari berdasarkan username
+user = User.objects.get(username="nama_user")
 try:
-    user.auth_token.delete()  # hapus token login dulu
+    user.auth_token.delete()
 except Exception:
     pass
-user.delete()  # hapus user dari SQLite
+user.delete()
 exit()
 ```
 
-**Opsi 2 — Management Command `sync_users` (hapus semua orphan sekaligus):**
-
-Orphan = user yang ada di SQLite tapi **sudah dihapus dari Supabase**.
-
+**Hapus semua orphan sekaligus (management command):**
 ```bash
 cd backend
 
-# Lihat siapa saja yang perlu dihapus (dry-run, aman, tidak ada yang dihapus)
+# Lihat siapa saja yang perlu dihapus (dry-run, tidak ada yang dihapus)
 python manage.py sync_users
 
 # Hapus semua orphan user dari SQLite secara permanen
 python manage.py sync_users --delete
 ```
 
-### Sinkronisasi Otomatis
+### 🔄 Sinkronisasi Otomatis Saat Login/Register
 
-Sistem sudah dilengkapi sync otomatis pada dua titik:
+Selain webhook, sistem juga sudah dilengkapi sync otomatis pada dua titik:
 
 | Aksi User | Perilaku Sistem |
 |---|---|
