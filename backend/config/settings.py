@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party
     "rest_framework",
-    "rest_framework.authtoken",
     "corsheaders",
     # Local apps
     "api",
@@ -72,6 +71,7 @@ DATABASES = {
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 SUPABASE_REST_URL = os.getenv("SUPABASE_REST_URL", "")
+SUPABASE_WEBHOOK_SECRET = os.getenv("SUPABASE_WEBHOOK_SECRET", "")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -100,10 +100,10 @@ CORS_ALLOW_CREDENTIALS = True
 # CSRF — trust the frontend origin
 CSRF_TRUSTED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 
-# REST Framework — use Token auth (no CSRF needed)
+# REST Framework — pakai custom Supabase token auth (tidak ada Django Token model)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "api.supabase_auth.SupabaseTokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",

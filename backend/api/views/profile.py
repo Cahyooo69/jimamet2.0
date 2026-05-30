@@ -14,21 +14,22 @@ from api.supabase_client import supabase
 @permission_classes([IsAuthenticated])
 def get_profile(request):
     """Get the current user's profile from Supabase."""
+    user = request.user
     try:
         rows = supabase.select(
             "users",
             {
-                "email": f"eq.{request.user.email}",
+                "id_user": f"eq.{user.id}",
             },
         )
         if rows:
             row = rows[0]
             return Response(
                 {
-                    "user_id": request.user.id,
+                    "user_id": user.id,
                     "full_name": row.get("nama"),
                     "email": row.get("email"),
-                    "username": request.user.username,
+                    "username": user.username,
                     "age": row.get("umur"),
                     "weight": row.get("berat_badan"),
                     "height": row.get("tinggi_badan"),
@@ -40,10 +41,10 @@ def get_profile(request):
         else:
             return Response(
                 {
-                    "user_id": request.user.id,
-                    "full_name": request.user.get_full_name(),
-                    "email": request.user.email,
-                    "username": request.user.username,
+                    "user_id": user.id,
+                    "full_name": user.get_full_name(),
+                    "email": user.email,
+                    "username": user.username,
                     "age": None,
                     "weight": None,
                     "height": None,
@@ -74,8 +75,9 @@ def update_profile(request):
     if not update_data:
         return Response({"error": "No valid fields to update."}, status=status.HTTP_400_BAD_REQUEST)
 
+    user = request.user
     try:
-        rows = supabase.select("users", {"email": f"eq.{request.user.email}"})
+        rows = supabase.select("users", {"id_user": f"eq.{user.id}"})
 
         mapped_data = {}
         if "full_name" in update_data:
@@ -93,22 +95,16 @@ def update_profile(request):
             if mapped_data:
                 result = supabase.update(
                     "users",
-                    {"email": request.user.email},
+                    {"id_user": user.id},
                     mapped_data,
                 )
         else:
-            mapped_data["email"] = request.user.email
-            mapped_data["id_user"] = request.user.id
+            mapped_data["email"] = user.email
+            mapped_data["id_user"] = user.id
             if "nama" not in mapped_data:
-                mapped_data["nama"] = request.user.get_full_name()
+                mapped_data["nama"] = user.get_full_name()
             result = supabase.insert("users", mapped_data)
 
-        if "full_name" in update_data:
-            parts = update_data["full_name"].split(" ", 1)
-            request.user.first_name = parts[0]
-            request.user.last_name = parts[1] if len(parts) > 1 else ""
-            request.user.save()
-
-        return Response(result)
+        return Response({"message": "Profil berhasil diperbarui.", "data": result})
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

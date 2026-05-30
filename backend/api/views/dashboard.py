@@ -16,7 +16,7 @@ from api.supabase_client import supabase
 def dashboard_summary(request):
     """Get daily nutrition summary for dashboard."""
     today = request.query_params.get('date', date.today().isoformat())
-    user_id = str(request.user.id)
+    user_id = request.user.id
 
     try:
         from datetime import timedelta

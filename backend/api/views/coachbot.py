@@ -23,9 +23,9 @@ def coachbot_chat(request):
     api_key = os.environ.get("GEMINI_API_KEY")
 
     try:
-        user_id = str(request.user.id)
+        user_id = request.user.id
         # Ambil data profil untuk target kalori
-        profile_rows = supabase.select("users", {"email": f"eq.{request.user.email}"})
+        profile_rows = supabase.select("users", {"id_user": f"eq.{request.user.id}"})
         target_calories = 2000
         if profile_rows:
             p = profile_rows[0]
