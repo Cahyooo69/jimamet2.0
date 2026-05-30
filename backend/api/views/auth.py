@@ -1,7 +1,6 @@
 """
 Auth views: register, login, logout, me, supabase_webhook.
 """
-import hashlib
 import hmac
 
 from django.conf import settings

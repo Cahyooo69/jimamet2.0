@@ -42,5 +42,4 @@ urlpatterns = [
 
     # NutriCoach AI Chat
     path('coachbot/chat/', views.coachbot_chat, name='coachbot_chat'),
-    # trigger reload 5
 ]
