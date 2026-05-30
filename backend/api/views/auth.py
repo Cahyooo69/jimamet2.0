@@ -38,17 +38,53 @@ def register_user(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if User.objects.filter(username=username).exists():
-        return Response(
-            {'error': 'Username already exists.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    # Cek username duplikat — tapi jika ada di SQLite & tidak ada di Supabase,
+    # itu adalah orphan user (dihapus dari Supabase) → bersihkan otomatis.
+    existing_by_username = User.objects.filter(username=username).first()
+    if existing_by_username:
+        try:
+            supabase_check = supabase.select('users', {'id_user': f'eq.{existing_by_username.id}'})
+            if supabase_check:
+                # Benar-benar masih ada di Supabase → tolak
+                return Response(
+                    {'error': 'Username sudah digunakan.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                # Orphan: ada di SQLite tapi tidak di Supabase → hapus dulu
+                try:
+                    existing_by_username.auth_token.delete()
+                except Exception:
+                    pass
+                existing_by_username.delete()
+        except Exception:
+            # Supabase tidak bisa diakses → tolak aman
+            return Response(
+                {'error': 'Username sudah digunakan.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-    if User.objects.filter(email=email).exists():
-        return Response(
-            {'error': 'Email already registered.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    # Cek email duplikat dengan logika yang sama
+    existing_by_email = User.objects.filter(email=email).first()
+    if existing_by_email:
+        try:
+            supabase_check = supabase.select('users', {'id_user': f'eq.{existing_by_email.id}'})
+            if supabase_check:
+                return Response(
+                    {'error': 'Email sudah terdaftar.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                try:
+                    existing_by_email.auth_token.delete()
+                except Exception:
+                    pass
+                existing_by_email.delete()
+        except Exception:
+            return Response(
+                {'error': 'Email sudah terdaftar.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     name_parts = full_name.split(' ', 1)
     user = User.objects.create_user(
@@ -125,6 +161,24 @@ def login_user(request):
     # 2. Django auth for regular users
     user = authenticate(request, username=username, password=password)
     if user is not None:
+        # 3. Verify user still exists in Supabase (source of truth for user profiles)
+        try:
+            supabase_rows = supabase.select('users', {'id_user': f'eq.{user.id}'})
+            if not supabase_rows:
+                # User deleted from Supabase → cascade delete from Django SQLite too
+                try:
+                    user.auth_token.delete()
+                except Exception:
+                    pass
+                user.delete()
+                return Response(
+                    {'error': 'Akun tidak ditemukan atau telah dihapus.'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+        except Exception:
+            # If Supabase is unreachable, fall through to allow login
+            pass
+
         token, _ = Token.objects.get_or_create(user=user)
         return Response({
             'message': 'Login successful.',
