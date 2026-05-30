@@ -1,6 +1,6 @@
 """
 api/views/__init__.py
-Re-exports all views so that api/urls.py can keep using `from . import views` unchanged.
+Re-exports semua views sehingga api/urls.py bisa tetap pakai `from . import views`.
 """
 from api.views.auth import (
     health_check,
