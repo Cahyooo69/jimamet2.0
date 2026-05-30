@@ -294,6 +294,35 @@
   color: var(--primary-container);
 }
 
+.passwordInput {
+  padding-right: 44px !important;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--outline);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+  z-index: 5;
+}
+
+.eyeButton:hover {
+  color: var(--primary-container);
+  background-color: var(--surface-container-high);
+}
+
+.eyeButton svg {
+  display: block;
+}
+
 /* ── Submit Button ── */
 .submitBtn {
   display: flex;

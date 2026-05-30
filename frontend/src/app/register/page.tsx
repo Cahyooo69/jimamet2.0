@@ -7,7 +7,17 @@ export default function RegisterRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/login?tab=register");
+    const token = localStorage.getItem("jimamet_token");
+    const role = localStorage.getItem("jimamet_role");
+    if (token) {
+      if (role === "ahli_gizi") {
+        router.replace("/ahli-gizi");
+      } else {
+        router.replace("/dashboard");
+      }
+    } else {
+      router.replace("/login?tab=register");
+    }
   }, [router]);
 
   return null;

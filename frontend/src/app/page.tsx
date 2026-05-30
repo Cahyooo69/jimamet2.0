@@ -31,7 +31,7 @@ function useInView(threshold = 0.15) {
 /* ───────── Animated Counter ───────── */
 function Counter({ end, suffix = "", duration = 2000 }: { end: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
-  const { ref, isInView } = useInView();
+  const { nodeRef: ref, isInView } = useInView();
 
   useEffect(() => {
     if (!isInView) return;
