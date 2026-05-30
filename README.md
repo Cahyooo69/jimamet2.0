@@ -5,7 +5,7 @@ Jimamet adalah platform analisis nutrisi klinis berbasis AI yang memungkinkan pe
 Proyek ini dibangun menggunakan:
 - **Frontend**: Next.js (React), TypeScript, CSS Modules
 - **Backend**: Django (Python), Django REST Framework
-- **Database**: Supabase (PostgreSQL)
+- **Database**: Supabase (PostgreSQL) — satu-satunya database, tidak ada SQLite
 - **AI Engine**: Google Gemini 2.5 Flash (untuk NutriCoach AI)
 
 ---
@@ -16,30 +16,37 @@ Sebelum menjalankan proyek ini, pastikan komputer Anda telah menginstal:
 1. **Node.js** (Minimal versi 18.x) & **npm**
 2. **Python** (Minimal versi 3.10)
 3. Akun **Supabase** (untuk database)
+4. Akun **Google AI Studio** (untuk Gemini API Key)
 
 ---
 
 ## 🚀 Cara Menjalankan Proyek Secara Lokal
 
 ### 1. Clone Repository
-Buka terminal dan jalankan perintah berikut:
 ```bash
 git clone https://github.com/Cahyooo69/jimamet2.0.git
 cd jimamet2.0
 ```
 
+---
+
 ### 2. Setup Database Supabase
+
 1. Buat project baru di [Supabase Dashboard](https://supabase.com/dashboard).
 2. Buka menu **SQL Editor**.
-3. Salin seluruh isi file `backend/supabase_schema.sql` lalu *paste* ke SQL Editor.
-4. Klik **Run** untuk membuat tabel `user_profiles` dan `food_records`.
-5. Buka menu **Project Settings -> API** di Supabase untuk mendapatkan URL dan Service Role Key.
+3. Salin seluruh isi file **`backend/sql/full_schema_migration.sql`** lalu *paste* ke SQL Editor.
+4. Klik **Run** untuk membuat semua tabel yang dibutuhkan.
+5. Jalankan juga file **`backend/sql/ahli_gizi_migration.sql`** untuk membuat tabel ahli gizi & konsultasi (beserta data dummy ahli gizi).
+6. Jalankan juga file **`backend/sql/chat_konsultasi_migration.sql`** untuk membuat tabel chat konsultasi.
+7. Buka menu **Project Settings → API** untuk mendapatkan **Project URL** dan **Service Role Key**.
+
+> ⚠️ Urutan eksekusi SQL: `full_schema_migration.sql` → `ahli_gizi_migration.sql` → `chat_konsultasi_migration.sql`
 
 ---
 
 ### 3. Setup Backend (Django)
 
-Buka terminal baru untuk backend:
+Buka terminal di folder `backend/`:
 
 ```bash
 cd backend
@@ -60,39 +67,40 @@ pip install -r requirements.txt
 ```
 
 **Konfigurasi Environment Backend:**
-1. Duplikat/copy file `backend/.env.example` dan ubah namanya menjadi `backend/.env` (jika belum ada).
-2. Isi nilai yang ada di `.env` sesuai dengan kredensial Supabase dan Gemini AI Anda:
-   ```env
-   SECRET_KEY=your-django-secret-key-here
-   DEBUG=True
-   ALLOWED_HOSTS=localhost,127.0.0.1
-   CORS_ALLOWED_ORIGINS=http://localhost:3000
-   
-   SUPABASE_URL=https://[YOUR_PROJECT_REF].supabase.co
-   SUPABASE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY]
-   SUPABASE_REST_URL=https://[YOUR_PROJECT_REF].supabase.co/rest/v1
-   
-   GEMINI_API_KEY=your-google-gemini-api-key
-   ```
-*(Catatan: `SUPABASE_REST_URL` digunakan untuk panggilan REST API aplikasi, sedangkan `GEMINI_API_KEY` digunakan untuk fitur AI CoachBot).*
 
-**Jalankan Migrasi Database Lokal (SQLite):**
+Copy file `.env.example` menjadi `.env`, lalu isi dengan kredensial Anda:
+```env
+SECRET_KEY=your-django-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+
+SUPABASE_URL=https://[YOUR_PROJECT_REF].supabase.co
+SUPABASE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY]
+SUPABASE_REST_URL=https://[YOUR_PROJECT_REF].supabase.co/rest/v1/
+
+GEMINI_API_KEY=your-google-gemini-api-key
+SUPABASE_WEBHOOK_SECRET=isi-bebas-rahasia-anda
+```
+
+**Jalankan Migrasi Django (hanya untuk struktur internal Django):**
 ```bash
 python manage.py migrate
 ```
-*(Catatan: Sistem autentikasi / akun pengguna secara default menggunakan database SQLite bawaan Django, sementara data lainnya menggunakan Supabase).*
+
+> 💡 Perintah ini hanya membuat tabel internal Django (sesi, admin, dll). **Data user dan semua data aplikasi disimpan di Supabase**, bukan SQLite.
 
 **Jalankan Server Backend:**
 ```bash
 python manage.py runserver 8000
 ```
-Server backend akan berjalan di `http://localhost:8000`.
+Server berjalan di `http://localhost:8000`.
 
 ---
 
 ### 4. Setup Frontend (Next.js)
 
-Buka terminal baru untuk frontend (biarkan terminal backend tetap berjalan):
+Buka terminal baru di folder `frontend/`:
 
 ```bash
 cd frontend
@@ -104,146 +112,127 @@ npm install
 ```
 
 **Konfigurasi Environment Frontend:**
-1. Buat file baru bernama `.env.local` di dalam folder `frontend/`.
-2. Masukkan URL API backend lokal Anda:
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:8000/api
-   ```
+
+Buat file `.env.local` di dalam folder `frontend/`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
 
 **Jalankan Server Frontend:**
 ```bash
 npm run dev
 ```
-Buka browser dan akses **`http://localhost:3000`**. 
+Buka browser dan akses **`http://localhost:3000`**.
 
 ---
 
-## 💡 Arsitektur Singkat
-- **Autentikasi**: Menggunakan sistem Token dari Django REST Framework. Token disimpan secara lokal di `localStorage` frontend.
-- **Komunikasi Data**: Frontend meminta data melalui API Django (`/api/...`), lalu Django akan bertindak sebagai *proxy* aman yang berkomunikasi dengan Supabase menggunakan `SupabaseClient` (REST API).
-- **Food Analysis**: Menerima input gambar/teks di frontend, dikirim ke AI Backend, yang kemudian hasil nutrisinya akan disimpan ke Supabase melalui endpoint Django.
+## 💡 Arsitektur Sistem
+
+### Database — Supabase Only
+Seluruh data aplikasi disimpan di **Supabase (PostgreSQL)**. Tidak ada data user di SQLite.
+
+| Tabel | Isi |
+|---|---|
+| `users` | Akun user (id_user, username, email, password hash, token sesi) |
+| `food_analysis` | Riwayat makanan yang dianalisis |
+| `history` | Rekapitulasi nutrisi harian |
+| `konsultasi` | Sesi konsultasi ke ahli gizi |
+| `chat_konsultasi` | Pesan chat antar user & ahli gizi |
+| `ahli_gizi` | Data akun ahli gizi |
+
+### Autentikasi — Custom Supabase Token Auth
+- Tidak menggunakan Django User model atau `rest_framework.authtoken`
+- Password di-hash menggunakan **PBKDF2** (Django hasher)
+- Token sesi disimpan di kolom `users.token` di Supabase
+- Setiap login, token **dirotasi** (token baru digenerate)
+- Token diklaim melalui header: `Authorization: Token <token>`
+
+### Alur Register & Login
+```
+Register:
+  Input (username, email, password)
+    → Hash password (PBKDF2)
+    → Generate token acak
+    → INSERT ke Supabase users table
+    → Return token + id_user (auto-increment)
+
+Login:
+  Input (username, password)
+    → SELECT dari Supabase by username
+    → Verify password hash
+    → Rotate token (generate baru, simpan ke Supabase)
+    → Return token baru
+```
+
+### Komunikasi Data
+```
+Frontend (Next.js)
+  → HTTP Request dengan Authorization: Token <token>
+  → Django REST Framework
+  → SupabaseTokenAuthentication (validasi token ke Supabase)
+  → View logic
+  → Supabase REST API
+  → Response ke Frontend
+```
 
 ---
 
 ## 🔑 Akun Uji Coba (Test Credentials)
-
-Untuk mencoba fitur aplikasi, Anda dapat menggunakan kredensial berikut:
 
 **👨‍⚕️ Ahli Gizi (Nutritionist Portal)**
 - **Username:** `drsarah`
 - **Password:** `Gizi1234!`
 
 **👤 Pasien (User Dashboard)**
-- *Belum ada akun default.* Silakan klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
+- *Belum ada akun default.* Klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
 
 ---
 
-## 🗄️ Manajemen Data User (SQLite ↔ Supabase)
+## 📁 Struktur Project
 
-Sistem ini menggunakan **dua database**:
-- **Django SQLite** (`backend/db.sqlite3`) — menyimpan akun & autentikasi user
-- **Supabase** — menyimpan profil & data user (sumber kebenaran / *source of truth*)
-
-### ⚡ Sinkronisasi Otomatis via Supabase Webhook
-
-Saat user dihapus dari Supabase, sistem dapat **otomatis** menghapus Django user dari SQLite menggunakan **Supabase Database Webhook**.
-
-#### Cara Setup (sekali saja):
-
-**Langkah 1 — Isi `.env` backend:**
-```env
-SUPABASE_WEBHOOK_SECRET=isi-bebas-kata-sandi-rahasia
 ```
-
-**Langkah 2 — Buka Supabase Dashboard:**
-1. Masuk ke [https://supabase.com/dashboard](https://supabase.com/dashboard)
-2. Pilih project → **Database** → **Webhooks**
-3. Klik **"Create a new webhook"**
-
-**Langkah 3 — Konfigurasi webhook:**
-
-| Field | Nilai |
-|---|---|
-| **Name** | `sync-delete-django-user` |
-| **Table** | `users` |
-| **Events** | ✅ `DELETE` saja |
-| **Type** | HTTP Request |
-| **Method** | `POST` |
-| **URL** | `http://<IP-SERVER-KAMU>:8000/api/auth/webhook/supabase/` |
-
-**Langkah 4 — Tambah HTTP Header (untuk keamanan):**
-
-| Header | Value |
-|---|---|
-| `x-webhook-secret` | nilai `SUPABASE_WEBHOOK_SECRET` di `.env` |
-
-**Langkah 5 — Klik "Create webhook" → Selesai!** ✅
-
-Sekarang setiap kali user dihapus dari Supabase, Django user di SQLite akan **langsung terhapus otomatis**.
+jimamet2.0/
+├── backend/
+│   ├── api/
+│   │   ├── views/          # auth, profile, food, dashboard, konsultasi, coachbot
+│   │   ├── supabase_auth.py    # Custom DRF auth backend (Supabase-based)
+│   │   └── supabase_client.py  # REST client untuk Supabase
+│   ├── config/             # Django settings, urls, wsgi
+│   ├── sql/                # SQL migration files untuk Supabase
+│   │   ├── full_schema_migration.sql   ← Jalankan ini dulu
+│   │   ├── ahli_gizi_migration.sql     ← Lalu ini
+│   │   └── chat_konsultasi_migration.sql ← Terakhir ini
+│   ├── .env.example
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── app/            # Next.js App Router pages
+│   │   ├── components/     # Reusable UI components
+│   │   └── lib/api/        # API client modules
+│   └── .env.local          # Buat sendiri (tidak di-commit)
+└── README.md
+```
 
 ---
 
-> ⚠️ **Catatan untuk development lokal:** Supabase tidak bisa memanggil `localhost`. Gunakan [ngrok](https://ngrok.com/) untuk expose server lokal:
-> ```bash
-> ngrok http 8000
-> # Gunakan URL ngrok (contoh: https://abc123.ngrok-free.app) sebagai base URL webhook
-> ```
+## 🌐 API Endpoints
 
----
-
-### 🔧 Sinkronisasi Manual (alternatif / cadangan)
-
-Jika webhook belum disetup, gunakan cara manual berikut:
-
-**Hapus 1 user via Django Shell:**
-```bash
-cd backend
-python manage.py shell
-```
-```python
-from django.contrib.auth.models import User
-
-user = User.objects.get(username="nama_user")
-try:
-    user.auth_token.delete()
-except Exception:
-    pass
-user.delete()
-exit()
-```
-
-**Hapus semua orphan sekaligus (management command):**
-```bash
-cd backend
-
-# Lihat siapa saja yang perlu dihapus (dry-run, tidak ada yang dihapus)
-python manage.py sync_users
-
-# Hapus semua orphan user dari SQLite secara permanen
-python manage.py sync_users --delete
-```
-
-### 🔄 Sinkronisasi Otomatis Saat Login/Register
-
-Selain webhook, sistem juga sudah dilengkapi sync otomatis pada dua titik:
-
-| Aksi User | Perilaku Sistem |
-|---|---|
-| User dihapus dari Supabase → **coba login** | Login ditolak, Django user & token auto-dihapus dari SQLite |
-| User dihapus dari Supabase → **coba register ulang** | Django user lama (orphan) di-cleanup otomatis, registrasi baru berhasil |
-
----
-
-## 🔑 Akun Uji Coba (Test Credentials)
-
-Untuk mencoba fitur aplikasi, Anda dapat menggunakan kredensial berikut:
-
-**👨‍⚕️ Ahli Gizi (Nutritionist Portal)**
-- **Username:** `drsarah`
-- **Password:** `Gizi1234!`
-
-**👤 Pasien (User Dashboard)**
-- *Belum ada akun default.* Silakan klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/health/` | Health check | ❌ |
+| POST | `/api/auth/register/` | Registrasi user baru | ❌ |
+| POST | `/api/auth/login/` | Login | ❌ |
+| POST | `/api/auth/logout/` | Logout | ✅ |
+| GET | `/api/auth/me/` | Info user saat ini | ✅ |
+| GET | `/api/profile/` | Ambil profil user | ✅ |
+| PUT | `/api/profile/update/` | Update profil user | ✅ |
+| GET | `/api/food/` | List riwayat makanan | ✅ |
+| POST | `/api/food/create/` | Tambah makanan | ✅ |
+| DELETE | `/api/food/<id>/delete/` | Hapus makanan | ✅ |
+| GET | `/api/dashboard/summary/` | Ringkasan nutrisi harian | ✅ |
+| POST | `/api/coachbot/chat/` | Chat dengan NutriCoach AI | ✅ |
+| POST | `/api/konsultasi/create/` | Buat sesi konsultasi | ✅ |
+| GET | `/api/konsultasi/` | Daftar semua konsultasi | ❌ |
 
 ---
 
