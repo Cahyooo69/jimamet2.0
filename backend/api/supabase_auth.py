@@ -1,9 +1,3 @@
-"""
-supabase_auth.py — Custom DRF authentication backend menggunakan Supabase.
-Menggantikan Django User model + rest_framework.authtoken sepenuhnya.
-Token lookups are cached in-memory for performance.
-"""
-
 import secrets
 
 from django.contrib.auth.hashers import make_password, check_password as _check_password
@@ -13,8 +7,6 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from api.supabase_client import supabase
 from api import cache as app_cache
-
-# ── Password Utilities ──────────────────────────────────────────────────────
 
 
 def hash_password(raw_password: str) -> str:
@@ -32,14 +24,12 @@ def generate_token() -> str:
     return secrets.token_hex(20)
 
 
-# ── User Objects ─────────────────────────────────────────────────────────────
-
-
 class SupabaseUser(AnonymousUser):
     """
     Custom user model representing a normal user authenticated via Supabase token.
     Uses English naming matching schema v2.
     """
+
     is_active = True
     is_authenticated = True
     role = "user"
@@ -66,6 +56,7 @@ class AhliGiziUser(AnonymousUser):
     """
     Custom user model representing a Nutritionist (Ahli Gizi).
     """
+
     is_active = True
     is_authenticated = True
     role = "nutritionist"
@@ -87,9 +78,6 @@ class AhliGiziUser(AnonymousUser):
 
     def get_full_name(self):
         return self.full_name
-
-
-# ── DRF Authentication Class ─────────────────────────────────────────────────
 
 
 class SupabaseTokenAuthentication(BaseAuthentication):

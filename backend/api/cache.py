@@ -6,18 +6,17 @@ Wraps Django's cache framework with typed helpers and TTL constants.
 import hashlib
 from django.core.cache import cache
 
-# ── TTL Constants (seconds) ──────────────────────────────────────────────────
+# TTL Constants (seconds)
 
-TTL_AUTH_TOKEN = 300       # 5 min — token → user lookup
-TTL_PROFILE = 300          # 5 min — user profile data
-TTL_DASHBOARD = 60         # 1 min — dashboard summary
-TTL_FOOD_RECORDS = 60      # 1 min — food record listing
-TTL_COACH_SESSIONS = 30    # 30s  — coach session listing
-TTL_COACH_MESSAGES = 30    # 30s  — messages within a session
+TTL_AUTH_TOKEN = 300  # 5 min — token → user lookup
+TTL_PROFILE = 300  # 5 min — user profile data
+TTL_DASHBOARD = 60  # 1 min — dashboard summary
+TTL_FOOD_RECORDS = 60  # 1 min — food record listing
+TTL_COACH_SESSIONS = 30  # 30s  — coach session listing
+TTL_COACH_MESSAGES = 30  # 30s  — messages within a session
 
 
-# ── Key Builders ─────────────────────────────────────────────────────────────
-
+# Key Builders
 def _key(prefix: str, *parts) -> str:
     """Build a cache key from prefix and parts."""
     return f"jm:{prefix}:{':'.join(str(p) for p in parts)}"
@@ -49,8 +48,7 @@ def key_coach_session_detail(session_id) -> str:
     return _key("csdet", session_id)
 
 
-# ── Cache Operations ─────────────────────────────────────────────────────────
-
+# Cache Operations
 def get(key: str):
     """Get a value from cache. Returns None on miss."""
     return cache.get(key)
