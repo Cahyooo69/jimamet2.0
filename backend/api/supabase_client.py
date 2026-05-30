@@ -44,7 +44,6 @@ class SupabaseClient:
             raise RuntimeError(f"Supabase {operation} on '{table}' failed ({resp.status_code}): {msg}")
         return resp
 
-    # ── SELECT ──
     def select(self, table: str, params: dict = None) -> list:
         """SELECT rows from a table."""
         resp = self._session.get(
@@ -55,7 +54,6 @@ class SupabaseClient:
         self._handle_response(resp, "SELECT", table)
         return resp.json()
 
-    # ── INSERT ──
     def insert(self, table: str, data: dict) -> dict:
         """INSERT a single row."""
         resp = self._session.post(
@@ -67,7 +65,6 @@ class SupabaseClient:
         result = resp.json()
         return result[0] if isinstance(result, list) and result else result
 
-    # ── UPDATE ──
     def update(self, table: str, match: dict, data: dict) -> dict:
         """UPDATE rows matching filters."""
         params = {k: f"eq.{v}" for k, v in match.items()}
@@ -90,7 +87,6 @@ class SupabaseClient:
             return result[0]
         return result
 
-    # ── DELETE ──
     def delete(self, table: str, match: dict) -> bool:
         """DELETE rows matching filters."""
         params = {k: f"eq.{v}" for k, v in match.items()}
