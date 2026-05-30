@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import NutriCoachPopup from "./components/NutriCoachPopup/NutriCoachPopup";
+
 import { isLoggedIn, getCurrentUser, apiLogout } from "@/lib/api";
 import styles from "./dashboard-layout.module.css";
 
@@ -47,6 +47,15 @@ const navItems = [
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
         <circle cx="12" cy="7" r="4" />
+      </svg>
+    ),
+  },
+  {
+    href: "/dashboard/coach",
+    label: "NutriCoach AI",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
       </svg>
     ),
   },
@@ -172,8 +181,6 @@ export default function DashboardLayout({
       {/* ── MAIN CONTENT ── */}
       <main className={styles.main}>{children}</main>
 
-      {/* ── NutriCoach AI Popup ── */}
-      <NutriCoachPopup />
     </div>
   );
 }

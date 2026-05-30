@@ -21,19 +21,23 @@ from api.controllers.analysis_controller import (
     delete_food_record,
     dashboard_summary,
 )
-from api.controllers.notification_controller import (
-    create_konsultasi,
-    list_konsultasi,
-    update_konsultasi,
-    delete_konsultasi,
+from api.controllers.consultation_controller import (
+    create_consultation,
+    list_consultations,
+    update_consultation,
+    delete_consultation,
 )
-from api.controllers.coachbot_controller import (
+from api.controllers.coach_chat_controller import (
     list_chat,
     send_chat,
     delete_chat,
 )
 from api.controllers.prediction_controller import (
     coachbot_chat,
+    list_sessions,
+    create_session,
+    get_session,
+    delete_session,
 )
 
 __all__ = [
@@ -42,7 +46,7 @@ __all__ = [
     'get_profile', 'update_profile',
     'list_food_records', 'create_food_record', 'get_food_record', 'delete_food_record',
     'dashboard_summary',
-    'create_konsultasi', 'list_konsultasi', 'update_konsultasi', 'delete_konsultasi',
+    'create_consultation', 'list_consultations', 'update_consultation', 'delete_consultation',
     'list_chat', 'send_chat', 'delete_chat',
-    'coachbot_chat',
+    'coachbot_chat', 'list_sessions', 'create_session', 'get_session', 'delete_session',
 ]

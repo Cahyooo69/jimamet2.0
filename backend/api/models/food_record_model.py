@@ -1,18 +1,18 @@
-"""Data access layer for the 'food_analysis' table."""
+"""Data access layer for the 'food_records' table."""
 
 from api.supabase_client import supabase
 
 
-class FoodAnalysisModel:
-    """Data access for the 'food_analysis' Supabase table."""
+class FoodRecordModel:
+    """Data access for the 'food_records' Supabase table."""
 
-    TABLE = "food_analysis"
+    TABLE = "food_records"
 
     @classmethod
-    def find_by_user(cls, user_id, order: str = "tanggal.desc", extra_params: dict = None) -> list:
+    def find_by_user(cls, user_id, order: str = "recorded_at.desc", extra_params: dict = None) -> list:
         """Find all food analysis records for a user, with optional filters."""
         params = {
-            "id_user": f"eq.{user_id}",
+            "user_id": f"eq.{user_id}",
             "order": order,
         }
         if extra_params:
@@ -21,12 +21,12 @@ class FoodAnalysisModel:
 
     @classmethod
     def find_by_id_and_user(cls, record_id, user_id) -> dict | None:
-        """Find a single record by id_analysis and id_user."""
+        """Find a single record by id and user_id."""
         rows = supabase.select(
             cls.TABLE,
             {
-                "id_analysis": f"eq.{record_id}",
-                "id_user": f"eq.{user_id}",
+                "id": f"eq.{record_id}",
+                "user_id": f"eq.{user_id}",
             },
         )
         return rows[0] if rows else None
@@ -38,11 +38,11 @@ class FoodAnalysisModel:
 
     @classmethod
     def delete(cls, record_id, user_id) -> bool:
-        """Delete a food analysis record by id_analysis and id_user."""
+        """Delete a food analysis record by id and user_id."""
         return supabase.delete(
             cls.TABLE,
             {
-                "id_analysis": record_id,
-                "id_user": user_id,
+                "id": record_id,
+                "user_id": user_id,
             },
         )

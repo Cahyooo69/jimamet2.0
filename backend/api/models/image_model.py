@@ -1,22 +1,22 @@
-"""Data access layer for the 'image' table."""
+"""Data access layer for the 'images' table."""
 
 from api.supabase_client import supabase
 
 
 class ImageModel:
-    """Data access for the 'image' Supabase table."""
+    """Data access for the 'images' Supabase table."""
 
-    TABLE = "image"
+    TABLE = "images"
 
     @classmethod
     def find_by_user(cls, user_id) -> list:
         """Find all images for a user."""
-        return supabase.select(cls.TABLE, {"id_user": f"eq.{user_id}"})
+        return supabase.select(cls.TABLE, {"user_id": f"eq.{user_id}"})
 
     @classmethod
     def find_by_id(cls, image_id) -> dict | None:
-        """Find an image by id_image."""
-        rows = supabase.select(cls.TABLE, {"id_image": f"eq.{image_id}"})
+        """Find an image by id."""
+        rows = supabase.select(cls.TABLE, {"id": f"eq.{image_id}"})
         return rows[0] if rows else None
 
     @classmethod
@@ -26,5 +26,5 @@ class ImageModel:
 
     @classmethod
     def delete(cls, image_id) -> bool:
-        """Delete an image record by id_image."""
-        return supabase.delete(cls.TABLE, {"id_image": image_id})
+        """Delete an image record by id."""
+        return supabase.delete(cls.TABLE, {"id": image_id})

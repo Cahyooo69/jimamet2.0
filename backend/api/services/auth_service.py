@@ -39,7 +39,7 @@ class AuthService:
 
         user_data = {
             "username": username,
-            "nama": full_name,
+            "full_name": full_name,
             "email": email,
             "password": password_hash,
             "token": token,
@@ -48,10 +48,10 @@ class AuthService:
         # Merge optional extra data
         if extra_data:
             field_map = {
-                "age": "umur",
-                "weight": "berat_badan",
-                "height": "tinggi_badan",
-                "activity_level": "aktivitas_harian",
+                "age": "age",
+                "weight": "weight",
+                "height": "height",
+                "activity_level": "activity_level",
             }
             for api_key, db_key in field_map.items():
                 val = extra_data.get(api_key)
@@ -59,7 +59,7 @@ class AuthService:
                     user_data[db_key] = val
 
         result = UserModel.create(user_data)
-        user_id = result.get("id_user") if isinstance(result, dict) else None
+        user_id = result.get("id") if isinstance(result, dict) else None
 
         return {
             "token": token,
@@ -72,7 +72,7 @@ class AuthService:
     @classmethod
     def login(cls, username: str, password: str) -> dict:
         """
-        Authenticate a user (ahli_gizi or regular user).
+        Authenticate a user (nutritionist or regular user).
 
         Returns dict with keys: message, token, role (optional), user.
         Raises ValueError on failure.
@@ -82,23 +82,23 @@ class AuthService:
         if not username or not password:
             raise ValueError("Username dan password wajib diisi.")
 
-        # 1. Check ahli_gizi table first
+        # 1. Check nutritionists table first
         try:
-            ahli_rows = supabase.select("ahli_gizi", {"username": f"eq.{username}"})
+            ahli_rows = supabase.select("nutritionists", {"username": f"eq.{username}"})
             if ahli_rows:
                 ag = ahli_rows[0]
                 if ag.get("password") == password:
                     return {
                         "message": "Login berhasil.",
-                        "token": f'ahligizi_{ag["id_ahli_gizi"]}',
-                        "role": "ahli_gizi",
+                        "token": f'ahligizi_{ag["id"]}',
+                        "role": "nutritionist",
                         "user": {
-                            "id": ag["id_ahli_gizi"],
+                            "id": ag["id"],
                             "username": ag["username"],
                             "email": ag.get("email", ""),
-                            "full_name": ag.get("nama", ""),
-                            "spesialisasi": ag.get("spesialisasi", ""),
-                            "no_str": ag.get("no_str", ""),
+                            "full_name": ag.get("full_name", ""),
+                            "specialization": ag.get("specialization", ""),
+                            "license_number": ag.get("license_number", ""),
                         },
                     }
         except Exception:
@@ -114,23 +114,23 @@ class AuthService:
 
         # Rotate token on each login
         new_token = generate_token()
-        UserModel.update(user_row["id_user"], {"token": new_token})
+        UserModel.update(user_row["id"], {"token": new_token})
 
         return {
             "message": "Login berhasil.",
             "token": new_token,
             "user": {
-                "id": user_row.get("id_user"),
+                "id": user_row.get("id"),
                 "username": user_row.get("username"),
                 "email": user_row.get("email", ""),
-                "full_name": user_row.get("nama", ""),
+                "full_name": user_row.get("full_name", ""),
             },
         }
 
     @classmethod
     def logout(cls, user) -> None:
-        """Clear user session token. No-op for ahli_gizi."""
-        if getattr(user, "role", "") == "ahli_gizi":
+        """Clear user session token. No-op for nutritionist."""
+        if getattr(user, "role", "") == "nutritionist":
             return
         try:
             UserModel.update(user.id, {"token": None})
@@ -159,7 +159,7 @@ class AuthService:
                 raise PermissionError("Unauthorized.")
 
         if payload.get("type") == "DELETE" and payload.get("table") == "users":
-            id_user = payload.get("old_record", {}).get("id_user")
+            id_user = payload.get("old_record", {}).get("id")
             return {"message": f"User {id_user} telah dihapus dari Supabase."}
 
         return {"message": "Event diabaikan."}

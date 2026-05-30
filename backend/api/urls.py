@@ -29,17 +29,21 @@ urlpatterns = [
     # Dashboard
     path('dashboard/summary/', views.dashboard_summary, name='dashboard_summary'),
 
-    # Konsultasi (CoachBot → Ahli Gizi)
-    path('konsultasi/', views.list_konsultasi, name='list_konsultasi'),
-    path('konsultasi/create/', views.create_konsultasi, name='create_konsultasi'),
-    path('konsultasi/<str:konsultasi_id>/update/', views.update_konsultasi, name='update_konsultasi'),
-    path('konsultasi/<str:konsultasi_id>/delete/', views.delete_konsultasi, name='delete_konsultasi'),
+    # Consultations (CoachBot → Nutritionist referral)
+    path('consultations/', views.list_consultations, name='list_consultations'),
+    path('consultations/create/', views.create_consultation, name='create_consultation'),
+    path('consultations/<str:consultation_id>/update/', views.update_consultation, name='update_consultation'),
+    path('consultations/<str:consultation_id>/delete/', views.delete_consultation, name='delete_consultation'),
 
-    # Chat Konsultasi (User ↔ Ahli Gizi)
-    path('konsultasi/<str:konsultasi_id>/chat/', views.list_chat, name='list_chat'),
-    path('konsultasi/<str:konsultasi_id>/chat/send/', views.send_chat, name='send_chat'),
+    # Consultation Chat (User ↔ Nutritionist)
+    path('consultations/<str:consultation_id>/chat/', views.list_chat, name='list_chat'),
+    path('consultations/<str:consultation_id>/chat/send/', views.send_chat, name='send_chat'),
     path('chat/<str:chat_id>/delete/', views.delete_chat, name='delete_chat'),
 
-    # NutriCoach AI Chat
-    path('coachbot/chat/', views.coachbot_chat, name='coachbot_chat'),
+    # NutriCoach AI Chat (Session-based)
+    path('coach/sessions/', views.list_sessions, name='list_sessions'),
+    path('coach/sessions/create/', views.create_session, name='create_session'),
+    path('coach/sessions/<str:session_id>/', views.get_session, name='get_session'),
+    path('coach/sessions/<str:session_id>/delete/', views.delete_session, name='delete_session'),
+    path('coach/sessions/<str:session_id>/chat/', views.coachbot_chat, name='coachbot_chat'),
 ]

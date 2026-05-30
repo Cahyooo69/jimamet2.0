@@ -2,24 +2,24 @@
 
 import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import styles from "../ahli-gizi.module.css";
-import { apiListKonsultasi, apiUpdateKonsultasi, apiListChat, apiSendChat, apiDeleteChat, apiDeleteKonsultasi } from "@/lib/api";
+import { apiListConsultations, apiUpdateConsultation, apiListChat, apiSendChat, apiDeleteChat, apiDeleteConsultation } from "@/lib/api";
 
 interface ChatMsg {
-  id_chat: string;
-  pengirim: "user" | "ahli_gizi";
-  pesan: string;
-  tanggal: string;
+  id: string;
+  sender: "user" | "nutritionist";
+  message: string;
+  sent_at: string;
 }
 
-interface Konsultasi {
-  id_konsultasi: string;
-  id_user: string;
-  nama_pasien: string;
-  email_pasien: string;
-  pesan_coachbot: string;
-  status: "menunggu" | "selesai" | "dibatalkan";
-  catatan_ahli_gizi: string;
-  tanggal: string;
+interface Consultation {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  coach_message: string;
+  status: "pending" | "completed" | "cancelled";
+  nutritionist_notes: string;
+  created_at: string;
 }
 
 function formatDate(iso: string) {
@@ -31,16 +31,16 @@ function formatDate(iso: string) {
 }
 
 const statusStyle = {
-  menunggu:   { bg: "#fff3cd", color: "#856404", label: "Menunggu" },
-  selesai:    { bg: "rgba(76,175,80,0.12)", color: "#2e7d32", label: "Selesai" },
-  dibatalkan: { bg: "#f5f5f5", color: "#707a6c", label: "Dibatalkan" },
+  pending:   { bg: "#fff3cd", color: "#856404", label: "Menunggu" },
+  completed:    { bg: "rgba(76,175,80,0.12)", color: "#2e7d32", label: "Selesai" },
+  cancelled: { bg: "#f5f5f5", color: "#707a6c", label: "Dibatalkan" },
 };
 
 export default function KonsultasiPage() {
-  const [items, setItems] = useState<Konsultasi[]>([]);
+  const [items, setItems] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"semua" | "menunggu" | "selesai">("semua");
-  const [selected, setSelected] = useState<Konsultasi | null>(null);
+  const [filter, setFilter] = useState<"semua" | "pending" | "completed">("semua");
+  const [selected, setSelected] = useState<Consultation | null>(null);
   const [catatan, setCatatan] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -61,9 +61,9 @@ export default function KonsultasiPage() {
 
   // Set up polling for chat messages when a consultation is selected
   useEffect(() => {
-    if (selected && selected.status === "menunggu") {
-      pollChat(selected.id_konsultasi);
-      pollRef.current = setInterval(() => pollChat(selected.id_konsultasi), 5000);
+    if (selected && selected.status === "pending") {
+      pollChat(selected.id);
+      pollRef.current = setInterval(() => pollChat(selected.id), 5000);
     } else {
       setChatMsgs([]);
     }
@@ -77,7 +77,7 @@ export default function KonsultasiPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { ok, data } = await apiListKonsultasi();
+    const { ok, data } = await apiListConsultations();
     if (ok && Array.isArray(data)) {
       setItems(data);
     } else {
@@ -88,9 +88,9 @@ export default function KonsultasiPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleOpenDetail = (item: Konsultasi) => {
+  const handleOpenDetail = (item: Consultation) => {
     setSelected(item);
-    setCatatan(item.catatan_ahli_gizi || "");
+    setCatatan(item.nutritionist_notes || "");
     setChatInput("");
   };
 
@@ -102,9 +102,9 @@ export default function KonsultasiPage() {
     const text = chatInput.trim();
     setChatInput(""); // Clear input immediately for better UX
     
-    const { ok } = await apiSendChat(selected.id_konsultasi, text, "ahli_gizi");
+    const { ok } = await apiSendChat(selected.id, text, "nutritionist");
     if (ok) {
-      await pollChat(selected.id_konsultasi);
+      await pollChat(selected.id);
     }
     setChatSending(false);
   };
@@ -114,24 +114,24 @@ export default function KonsultasiPage() {
     
     const { ok } = await apiDeleteChat(chatId);
     if (ok && selected) {
-      await pollChat(selected.id_konsultasi);
+      await pollChat(selected.id);
     } else {
       alert("Gagal menghapus pesan chat.");
     }
   };
 
-  const handleUpdate = async (status: "selesai" | "dibatalkan") => {
+  const handleUpdate = async (status: "completed" | "cancelled") => {
     if (!selected) return;
     setSaving(true);
-    const { ok } = await apiUpdateKonsultasi(selected.id_konsultasi, {
+    const { ok } = await apiUpdateConsultation(selected.id, {
       status,
-      catatan_ahli_gizi: catatan,
+      nutritionist_notes: catatan,
     });
     if (ok) {
       setItems((prev) =>
         prev.map((i) =>
-          i.id_konsultasi === selected.id_konsultasi
-            ? { ...i, status, catatan_ahli_gizi: catatan }
+          i.id === selected.id
+            ? { ...i, status, nutritionist_notes: catatan }
             : i
         )
       );
@@ -145,10 +145,10 @@ export default function KonsultasiPage() {
     if (!confirm("Apakah Anda yakin ingin menghapus data konsultasi ini beserta seluruh chatnya?")) return;
     
     setLoading(true);
-    const { ok } = await apiDeleteKonsultasi(id);
+    const { ok } = await apiDeleteConsultation(id);
     if (ok) {
-      setItems((prev) => prev.filter((i) => i.id_konsultasi !== id));
-      if (selected?.id_konsultasi === id) {
+      setItems((prev) => prev.filter((i) => i.id !== id));
+      if (selected?.id === id) {
         setSelected(null);
       }
     } else {
@@ -161,8 +161,8 @@ export default function KonsultasiPage() {
     filter === "semua" ? true : i.status === filter
   );
 
-  const countMenunggu = items.filter((i) => i.status === "menunggu").length;
-  const countSelesai  = items.filter((i) => i.status === "selesai").length;
+  const countMenunggu = items.filter((i) => i.status === "pending").length;
+  const countSelesai  = items.filter((i) => i.status === "completed").length;
 
   return (
     <div>
@@ -206,7 +206,7 @@ export default function KonsultasiPage() {
 
       {/* ── Filter tabs ── */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {(["semua", "menunggu", "selesai"] as const).map((f) => (
+        {(["semua", "pending", "completed"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -217,7 +217,7 @@ export default function KonsultasiPage() {
               color: filter === f ? "var(--ag-primary-dark)" : "var(--ag-on-variant)",
             }}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === "semua" ? "Semua" : f === "pending" ? "Menunggu" : "Selesai"}
           </button>
         ))}
       </div>
@@ -236,7 +236,7 @@ export default function KonsultasiPage() {
           <div style={{ color: "var(--ag-outline)", fontSize: 15 }}>
             {filter === "semua"
               ? "Belum ada pasien yang dirujuk CoachBot."
-              : `Tidak ada konsultasi berstatus "${filter}".`}
+              : `Tidak ada konsultasi berstatus "${filter === "pending" ? "Menunggu" : "Selesai"}".`}
           </div>
         </div>
       ) : (
@@ -249,7 +249,7 @@ export default function KonsultasiPage() {
               const s = statusStyle[item.status];
               return (
                 <div
-                  key={item.id_konsultasi}
+                  key={item.id}
                   onClick={() => handleOpenDetail(item)}
                   style={{
                     display: "flex", alignItems: "flex-start", gap: 16,
@@ -267,21 +267,21 @@ export default function KonsultasiPage() {
                     fontSize: 18, fontWeight: 700, color: "var(--ag-primary-dark)",
                     fontFamily: "Plus Jakarta Sans",
                   }}>
-                    {item.nama_pasien?.[0]?.toUpperCase() ?? "?"}
+                    {item.full_name?.[0]?.toUpperCase() ?? "?"}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                       <span style={{ fontWeight: 600, fontSize: 14, color: "var(--ag-on-surface)" }}>
-                        {item.nama_pasien}
+                        {item.full_name}
                       </span>
                       <span style={{ fontSize: 12, color: "var(--ag-outline)" }}>
-                        {formatDate(item.tanggal)}
+                        {formatDate(item.created_at)}
                       </span>
                     </div>
                     <div style={{ fontSize: 13, color: "var(--ag-on-variant)", marginBottom: 6, lineHeight: 1.5,
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      🤖 {item.pesan_coachbot}
+                      🤖 {item.coach_message}
                     </div>
                     <span style={{ background: s.bg, color: s.color, padding: "2px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
                       {s.label}
@@ -290,7 +290,7 @@ export default function KonsultasiPage() {
 
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     <button
-                      onClick={(e) => handleDeleteKonsultasi(item.id_konsultasi, e)}
+                      onClick={(e) => handleDeleteKonsultasi(item.id, e)}
                       title="Hapus Konsultasi"
                       style={{
                         background: "transparent", border: "none", color: "#d32f2f", cursor: "pointer",
@@ -330,7 +330,7 @@ export default function KonsultasiPage() {
                   Detail Konsultasi
                 </h3>
                 <p style={{ fontSize: 13, color: "var(--ag-outline)", margin: 0 }}>
-                  {selected.nama_pasien} · {selected.email_pasien}
+                  {selected.full_name} · {selected.email}
                 </p>
               </div>
               <span style={{ background: statusStyle[selected.status].bg, color: statusStyle[selected.status].color, padding: "3px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
@@ -344,17 +344,17 @@ export default function KonsultasiPage() {
                 Pesan dari CoachBot
               </div>
               <div style={{ background: "rgba(46,125,50,0.06)", border: "1px solid rgba(46,125,50,0.2)", borderRadius: 10, padding: 14, fontSize: 14, color: "var(--ag-on-surface)", lineHeight: 1.7 }}>
-                🤖 {selected.pesan_coachbot}
+                🤖 {selected.coach_message}
               </div>
             </div>
 
             {/* Waktu */}
             <div style={{ fontSize: 12, color: "var(--ag-outline)", marginBottom: 16 }}>
-              📅 Dikirim: {formatDate(selected.tanggal)}
+              📅 Dikirim: {formatDate(selected.created_at)}
             </div>
 
             {/* Chat Ahli Gizi */}
-            {selected.status === "menunggu" ? (
+            {selected.status === "pending" ? (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-outline)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
                   Live Chat dengan Pasien
@@ -378,34 +378,34 @@ export default function KonsultasiPage() {
                       </div>
                     ) : (
                       chatMsgs.map((m) => (
-                        <div key={m.id_chat} style={{
+                        <div key={m.id} style={{
                           display: "flex", flexDirection: "column",
-                          alignItems: m.pengirim === "ahli_gizi" ? "flex-end" : "flex-start",
+                          alignItems: m.sender === "nutritionist" ? "flex-end" : "flex-start",
                           position: "relative"
                         }}>
                           <div style={{
                             display: "flex", alignItems: "center", gap: 6,
-                            flexDirection: m.pengirim === "ahli_gizi" ? "row-reverse" : "row"
+                            flexDirection: m.sender === "nutritionist" ? "row-reverse" : "row"
                           }}>
                             <div style={{
                               maxWidth: "100%", padding: "8px 12px",
-                              borderRadius: m.pengirim === "ahli_gizi" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
-                              background: m.pengirim === "ahli_gizi" ? "#2e7d32" : "#fff",
-                              color: m.pengirim === "ahli_gizi" ? "#fff" : "#1a1c1c",
-                              border: m.pengirim === "user" ? "1px solid #eee" : "none",
+                              borderRadius: m.sender === "nutritionist" ? "14px 14px 2px 14px" : "14px 14px 14px 2px",
+                              background: m.sender === "nutritionist" ? "#2e7d32" : "#fff",
+                              color: m.sender === "nutritionist" ? "#fff" : "#1a1c1c",
+                              border: m.sender === "user" ? "1px solid #eee" : "none",
                               fontSize: 13, lineHeight: 1.5, boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
                             }}>
-                              {m.pengirim === "user" && (
+                              {m.sender === "user" && (
                                 <div style={{ fontSize: 10, fontWeight: 700, color: "#666", marginBottom: 3 }}>
                                   👤 Pasien
                                 </div>
                               )}
-                              {m.pesan}
+                              {m.message}
                             </div>
                             
                             {/* Tombol Hapus (ikon trash) */}
                             <button
-                              onClick={() => handleDeleteChat(m.id_chat)}
+                              onClick={() => handleDeleteChat(m.id)}
                               title="Hapus pesan"
                               style={{
                                 background: "transparent", border: "none", color: "#d32f2f", cursor: "pointer",
@@ -419,7 +419,7 @@ export default function KonsultasiPage() {
                             </button>
                           </div>
                           
-                          <span style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDate(m.tanggal).split(' ')[1]}</span>
+                          <span style={{ fontSize: 10, color: "#888", marginTop: 2 }}>{formatDate(m.sent_at).split(' ')[1]}</span>
                         </div>
                       ))
                     )}
@@ -456,13 +456,13 @@ export default function KonsultasiPage() {
                   </form>
                 </div>
               </div>
-            ) : selected.catatan_ahli_gizi ? (
+            ) : selected.nutritionist_notes ? (
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--ag-outline)", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>
                   Catatan Ahli Gizi
                 </div>
                 <div style={{ background: "var(--ag-surface-low)", borderRadius: 8, padding: 12, fontSize: 14, color: "var(--ag-on-surface)", lineHeight: 1.6 }}>
-                  {selected.catatan_ahli_gizi}
+                  {selected.nutritionist_notes}
                 </div>
               </div>
             ) : null}
@@ -470,12 +470,12 @@ export default function KonsultasiPage() {
             {/* Actions */}
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button className={styles.btnSecondary} onClick={() => setSelected(null)} disabled={saving}>Tutup</button>
-              {selected.status === "menunggu" && (
+              {selected.status === "pending" && (
                 <>
-                  <button className={styles.btnReject} onClick={() => handleUpdate("dibatalkan")} disabled={saving}>
+                  <button className={styles.btnReject} onClick={() => handleUpdate("cancelled")} disabled={saving}>
                     Batalkan
                   </button>
-                  <button className={styles.btnPrimary} onClick={() => handleUpdate("selesai")} disabled={saving}>
+                  <button className={styles.btnPrimary} onClick={() => handleUpdate("completed")} disabled={saving}>
                     {saving ? "Menyimpan..." : "✓ Tandai Selesai"}
                   </button>
                 </>

@@ -1,6 +1,6 @@
 """
-Notification controller: konsultasi (referral) management.
-Thin HTTP layer — delegates to NotificationService.
+Consultation controller: consultation (referral) management.
+Thin HTTP layer — delegates to ConsultationService.
 """
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -8,17 +8,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from api.services import NotificationService
+from api.services import ConsultationService
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-def create_konsultasi(request):
-    """User (CoachBot) membuat permintaan konsultasi ke ahli gizi."""
+def create_consultation(request):
+    """User (CoachBot) creates a consultation request to nutritionist."""
     try:
-        result = NotificationService.create_konsultasi(
+        result = ConsultationService.create_consultation(
             request.user.id,
-            request.data.get("pesan_coachbot", ""),
+            request.data.get("coach_message", ""),
         )
         return Response(result, status=status.HTTP_201_CREATED)
     except ValueError as e:
@@ -30,10 +30,10 @@ def create_konsultasi(request):
 @api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def list_konsultasi(request):
-    """Ahli gizi melihat semua daftar konsultasi yang masuk."""
+def list_consultations(request):
+    """Nutritionist views all incoming consultations."""
     try:
-        result = NotificationService.list_konsultasi()
+        result = ConsultationService.list_consultations()
         return Response(result)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -42,11 +42,11 @@ def list_konsultasi(request):
 @api_view(["PATCH"])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def update_konsultasi(request, konsultasi_id):
-    """Ahli gizi mengupdate status & catatan konsultasi."""
+def update_consultation(request, consultation_id):
+    """Nutritionist updates consultation status & notes."""
     try:
-        result = NotificationService.update_konsultasi(
-            konsultasi_id,
+        result = ConsultationService.update_consultation(
+            consultation_id,
             request.data,
         )
         return Response(result)
@@ -59,10 +59,10 @@ def update_konsultasi(request, konsultasi_id):
 @api_view(["DELETE"])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def delete_konsultasi(request, konsultasi_id):
-    """Ahli gizi menghapus sesi konsultasi."""
+def delete_consultation(request, consultation_id):
+    """Nutritionist deletes a consultation session."""
     try:
-        NotificationService.delete_konsultasi(konsultasi_id)
-        return Response({"message": "Konsultasi deleted successfully."})
+        ConsultationService.delete_consultation(consultation_id)
+        return Response({"message": "Consultation deleted successfully."})
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

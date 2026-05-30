@@ -240,10 +240,10 @@ export default function DashboardPage() {
                 <div key={i} className={styles.mealItem}>
                   <span className={styles.mealEmoji}>🍽️</span>
                   <div className={styles.mealInfo}>
-                    <span className={styles.mealName}>{meal.nama_makanan}</span>
-                    <span className={styles.mealTime}>{formatTime(meal.tanggal)}</span>
+                    <span className={styles.mealName}>{meal.food_name || meal.nama_makanan}</span>
+                    <span className={styles.mealTime}>{formatTime(meal.recorded_at || meal.tanggal)}</span>
                   </div>
-                  <span className={styles.mealCal}>{meal.kalori} kkal</span>
+                  <span className={styles.mealCal}>{meal.calories || meal.kalori} kkal</span>
                 </div>
               ))
             )}

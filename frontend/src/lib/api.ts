@@ -198,29 +198,29 @@ export async function apiDashboardSummary(date?: string) {
 }
 
 // ═══════════════════════════════════════════════════
-//  KONSULTASI (CoachBot → Ahli Gizi)
+//  CONSULTATIONS (Coach → Nutritionist)
 // ═══════════════════════════════════════════════════
 
-export async function apiListKonsultasi() {
-  const res = await apiFetch("/konsultasi/");
+export async function apiListConsultations() {
+  const res = await apiFetch("/consultations/");
   const json = await res.json();
   return { ok: res.ok, data: json };
 }
 
-export async function apiCreateKonsultasi(pesan_coachbot: string) {
-  const res = await apiFetch("/konsultasi/create/", {
+export async function apiCreateConsultation(coach_message: string) {
+  const res = await apiFetch("/consultations/create/", {
     method: "POST",
-    body: JSON.stringify({ pesan_coachbot }),
+    body: JSON.stringify({ coach_message }),
   });
   const json = await res.json();
   return { ok: res.ok, data: json };
 }
 
-export async function apiUpdateKonsultasi(
+export async function apiUpdateConsultation(
   id: string,
-  data: { status?: string; catatan_ahli_gizi?: string }
+  data: { status?: string; nutritionist_notes?: string }
 ) {
-  const res = await apiFetch(`/konsultasi/${id}/update/`, {
+  const res = await apiFetch(`/consultations/${id}/update/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
@@ -228,8 +228,8 @@ export async function apiUpdateKonsultasi(
   return { ok: res.ok, data: json };
 }
 
-export async function apiDeleteKonsultasi(id: string) {
-  const res = await apiFetch(`/konsultasi/${id}/delete/`, {
+export async function apiDeleteConsultation(id: string) {
+  const res = await apiFetch(`/consultations/${id}/delete/`, {
     method: "DELETE",
   });
   const json = await res.json();
@@ -237,23 +237,23 @@ export async function apiDeleteKonsultasi(id: string) {
 }
 
 // ═══════════════════════════════════════════════════
-//  CHAT KONSULTASI (User ↔ Ahli Gizi)
+//  CONSULTATION CHAT (User ↔ Nutritionist)
 // ═══════════════════════════════════════════════════
 
-export async function apiListChat(konsultasiId: string) {
-  const res = await apiFetch(`/konsultasi/${konsultasiId}/chat/`);
+export async function apiListChat(consultationId: string) {
+  const res = await apiFetch(`/consultations/${consultationId}/chat/`);
   const json = await res.json();
   return { ok: res.ok, data: json };
 }
 
 export async function apiSendChat(
-  konsultasiId: string,
-  pesan: string,
-  pengirim: "user" | "ahli_gizi"
+  consultationId: string,
+  message: string,
+  sender: "user" | "nutritionist"
 ) {
-  const res = await apiFetch(`/konsultasi/${konsultasiId}/chat/send/`, {
+  const res = await apiFetch(`/consultations/${consultationId}/chat/send/`, {
     method: "POST",
-    body: JSON.stringify({ pesan, pengirim }),
+    body: JSON.stringify({ message, sender }),
   });
   const json = await res.json();
   return { ok: res.ok, data: json };
@@ -268,11 +268,40 @@ export async function apiDeleteChat(chatId: string) {
 }
 
 // ═══════════════════════════════════════════════════
-//  NUTRICHACH AI (COACHBOT) CHAT
+//  NUTRICOACH AI (Coach Sessions)
 // ═══════════════════════════════════════════════════
 
-export async function apiCoachbotChat(message: string) {
-  const res = await apiFetch("/coachbot/chat/", {
+export async function apiListCoachSessions() {
+  const res = await apiFetch("/coach/sessions/");
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiCreateCoachSession(title?: string) {
+  const res = await apiFetch("/coach/sessions/create/", {
+    method: "POST",
+    body: JSON.stringify(title ? { title } : {}),
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiGetCoachSession(sessionId: string) {
+  const res = await apiFetch(`/coach/sessions/${sessionId}/`);
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiDeleteCoachSession(sessionId: string) {
+  const res = await apiFetch(`/coach/sessions/${sessionId}/delete/`, {
+    method: "DELETE",
+  });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiSendCoachMessage(sessionId: string, message: string) {
+  const res = await apiFetch(`/coach/sessions/${sessionId}/chat/`, {
     method: "POST",
     body: JSON.stringify({ message }),
   });

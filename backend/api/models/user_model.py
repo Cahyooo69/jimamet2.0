@@ -10,8 +10,8 @@ class UserModel:
 
     @classmethod
     def find_by_id(cls, user_id) -> dict | None:
-        """Find a user by id_user (BIGSERIAL)."""
-        rows = supabase.select(cls.TABLE, {"id_user": f"eq.{user_id}"})
+        """Find a user by id (BIGSERIAL)."""
+        rows = supabase.select(cls.TABLE, {"id": f"eq.{user_id}"})
         return rows[0] if rows else None
 
     @classmethod
@@ -39,10 +39,10 @@ class UserModel:
 
     @classmethod
     def update(cls, user_id, data: dict) -> dict:
-        """Update a user row by id_user."""
-        return supabase.update(cls.TABLE, {"id_user": user_id}, data)
+        """Update a user row by id."""
+        return supabase.update(cls.TABLE, {"id": user_id}, data)
 
     @classmethod
     def delete(cls, user_id) -> bool:
-        """Delete a user row by id_user."""
-        return supabase.delete(cls.TABLE, {"id_user": user_id})
+        """Delete a user row by id."""
+        return supabase.delete(cls.TABLE, {"id": user_id})

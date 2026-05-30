@@ -50,7 +50,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const { ok } = await apiUpdateProfile({
+    const { ok, data } = await apiUpdateProfile({
       full_name: profile.fullName,
       age: profile.age ? parseInt(profile.age) : null,
       weight: profile.weight ? parseFloat(profile.weight) : null,
@@ -63,6 +63,9 @@ export default function ProfilePage() {
     if (ok) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+    } else {
+      alert(data?.error || "Gagal menyimpan profil. Periksa koneksi atau backend.");
+      console.error("Profile update failed:", data);
     }
   };
 
