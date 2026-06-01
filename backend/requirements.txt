@@ -2,15 +2,15 @@
 # Install with: pip install -r requirements.txt
 
 # Web Framework
-Django==5.2.1
-djangorestframework==3.16.0
-django-cors-headers==4.7.0
+Django>=6.0
+djangorestframework>=3.17
+django-cors-headers>=4.9
 
 # Supabase REST API
-requests==2.32.3
+requests>=2.32
 
 # Environment Variables
-python-dotenv==1.1.0
+python-dotenv>=1.0
 
-# Google Gemini AI (new SDK)
-google-genai==1.16.0
+# Google Gemini AI (new SDK — replaces deprecated google-generativeai)
+google-genai>=2.0
