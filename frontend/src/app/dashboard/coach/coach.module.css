@@ -396,7 +396,76 @@
   font-weight: bold;
 }
 
+/* Sidebar Divider */
+.sidebarDivider {
+  padding: 0.75rem 1rem 0.5rem;
+  border-top: 1px solid rgba(46, 125, 50, 0.15);
+  margin-top: 0.5rem;
+}
+
+.sidebarDivider span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusBadge {
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Doctor Avatar */
+.doctorAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1565c0, #42a5f5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  font-size: 1.2rem;
+}
+
+.onlineDotYellow {
+  width: 8px;
+  height: 8px;
+  background-color: #f59e0b;
+  border-radius: 50;
+  display: inline-block;
+}
+
+/* Doctor Bubble */
+.bubbleDoctor {
+  background-color: #e3f2fd;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #bbdefb;
+}
+
+.senderLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #1565c0;
+  margin-bottom: 0.35rem;
+}
+
+/* Consultation Notice */
+.consultationNotice {
+  text-align: center;
+  padding: 0.6rem 1rem;
+  background-color: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: #f57f17;
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 768px) {
+
   .sidebar {
     position: absolute;
     top: 0;
