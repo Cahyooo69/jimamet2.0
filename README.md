@@ -302,4 +302,30 @@ jimamet2.0/
 
 ---
 
+## 📝 Changelog
+
+### v2.1.0 — 1 Juni 2026
+
+**🔧 Bug Fixes:**
+- **Fix konsultasi tidak muncul di user:** Tambah panel konsultasi ahli gizi di halaman NutriCoach AI (sidebar + chat view + tombol Refresh manual).
+- **Fix polling membebani server:** Hapus auto-polling 5 detik, ganti dengan lazy-load + tombol Refresh manual.
+- **Fix `daily_calorie_target` tidak sinkron:** Kolom di database sekarang otomatis dihitung ulang (TDEE) saat register maupun update profil.
+
+**✨ Improvements:**
+- **CoachBot context-aware:** System prompt diperkaya dengan data profil user (berat, tinggi, usia, gender, aktivitas, goal) + data konsumsi harian. AI sekarang bisa menjawab pertanyaan spesifik seperti "berapa kebutuhan kalori harianku?" dengan angka yang akurat.
+- **Disclaimer otomatis:** Setiap respons AI ditambahkan footer: _"Rekomendasi ini berdasarkan data konsumsi dan goal kamu. Untuk kondisi kesehatan khusus, disarankan konsultasi dengan Nutritionist."_
+- **Error logging Gemini/OpenRouter:** Error dari API AI sekarang tampil jelas di terminal Django (sebelumnya silent/tersembunyi).
+
+**📁 File yang Diubah:**
+
+| File | Perubahan |
+|---|---|
+| `backend/api/services/prediction_service.py` | System prompt diperkaya + disclaimer footer + error logging |
+| `backend/api/services/profile_service.py` | Auto-kalkulasi TDEE saat update profil → simpan ke `daily_calorie_target` |
+| `backend/api/services/auth_service.py` | Auto-kalkulasi TDEE saat register (jika data tersedia) |
+| `frontend/src/app/dashboard/coach/page.tsx` | Tambah panel konsultasi ahli gizi + lazy load + Refresh manual |
+| `frontend/src/app/dashboard/coach/coach.module.css` | Styling panel konsultasi + tombol Refresh |
+
+---
+
 Selamat mengembangkan! 🚀

@@ -58,6 +58,11 @@ class AuthService:
                 if val is not None:
                     user_data[db_key] = val
 
+        # Calculate TDEE if enough data is available
+        tdee = cls._calculate_tdee(user_data)
+        if tdee:
+            user_data["daily_calorie_target"] = tdee
+
         result = UserModel.create(user_data)
         user_id = result.get("id") if isinstance(result, dict) else None
 
@@ -163,3 +168,32 @@ class AuthService:
             return {"message": f"User {id_user} telah dihapus dari Supabase."}
 
         return {"message": "Event diabaikan."}
+
+    @staticmethod
+    def _calculate_tdee(profile: dict) -> int | None:
+        """Calculate TDEE from profile data. Returns None if data is incomplete."""
+        try:
+            w = float(profile.get("weight") or 0)
+            h = float(profile.get("height") or 0)
+            a = float(profile.get("age") or 0)
+            if not (w and h and a):
+                return None
+
+            gender = profile.get("gender", "male")
+            bmr = (10 * w + 6.25 * h - 5 * a + 5) if gender == "male" else (10 * w + 6.25 * h - 5 * a - 161)
+
+            factors = {
+                "sedentary": 1.2, "light": 1.375, "moderate": 1.55,
+                "active": 1.725, "veryActive": 1.9,
+            }
+            tdee = bmr * factors.get(profile.get("activity_level", "moderate"), 1.55)
+
+            goal = profile.get("goal", "maintain")
+            if goal == "lose":
+                tdee -= 400
+            elif goal == "gain":
+                tdee += 400
+
+            return round(tdee)
+        except (TypeError, ValueError):
+            return None

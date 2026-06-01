@@ -118,14 +118,26 @@ class PredictionService:
         # Build nutrition context
         nutrition = cls._build_nutrition_context(user_id)
         nutrition_context = f"""
-        [DATA NUTRISI PENGGUNA HARI INI]
-        - Target Kalori Harian (BMR): {nutrition['target_calories']} kkal
-        - Kalori Terkonsumsi: {nutrition['total_cal']} kkal
+        [PROFIL PENGGUNA]
+        - Berat Badan: {nutrition['weight']} kg
+        - Tinggi Badan: {nutrition['height']} cm
+        - Usia: {nutrition['age']} tahun
+        - Jenis Kelamin: {nutrition['gender']}
+        - Tingkat Aktivitas: {nutrition['activity_level']}
+        - Target Kesehatan: {nutrition['goal']}
+
+        [KEBUTUHAN & KONSUMSI HARI INI]
+        - Kebutuhan Kalori Harian (TDEE): {nutrition['target_calories']} kkal
+        - Kalori Sudah Terkonsumsi: {nutrition['total_cal']} kkal
+        - Sisa Kalori: {nutrition['target_calories'] - nutrition['total_cal']} kkal
         - Protein: {nutrition['total_protein']} g
         - Karbohidrat: {nutrition['total_carbs']} g
         - Lemak: {nutrition['total_fat']} g
-        Jika pengguna bertanya soal "analisis nutrisi hari ini" atau konsumsi mereka, JAWAB BERDASARKAN DATA INI.
-        Beritahu mereka apa yang kurang atau berlebih.
+
+        INSTRUKSI PENTING:
+        - Jika pengguna bertanya tentang kebutuhan kalori, TDEE, BMR, atau target hariannya, JAWAB LANGSUNG dengan angka {nutrition['target_calories']} kkal berdasarkan data profil di atas.
+        - Jika pengguna bertanya soal "analisis nutrisi hari ini" atau konsumsi mereka, jawab berdasarkan data konsumsi di atas dan beritahu apa yang kurang atau berlebih.
+        - Selalu sebutkan angka spesifik dari data di atas, jangan menjawab secara umum.
         """
 
         system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(nutrition_context=nutrition_context)
@@ -160,6 +172,9 @@ class PredictionService:
             ai_reply = cls._call_openrouter(or_prompt, message, openrouter_key)
             if not ai_reply:
                 raise RuntimeError(f"{fallback_error} | OpenRouter juga gagal merespons.")
+
+        # Append disclaimer footer
+        ai_reply += "\n\nRekomendasi ini berdasarkan data konsumsi dan goal kamu. Untuk kondisi kesehatan khusus, disarankan konsultasi dengan Nutritionist."
 
         # Check if consultation is needed
         needs_consultation = any(t in message.lower() for t in _CONSULTATION_TRIGGERS)
@@ -245,6 +260,22 @@ class PredictionService:
                     total_fat += float(f.get("fat") or 0)
 
         return {
+            "weight": profile.get("weight", "—") if profile else "—",
+            "height": profile.get("height", "—") if profile else "—",
+            "age": profile.get("age", "—") if profile else "—",
+            "gender": "Laki-laki" if (profile or {}).get("gender", "male") == "male" else "Perempuan",
+            "activity_level": {
+                "sedentary": "Tidak aktif",
+                "light": "Ringan",
+                "moderate": "Sedang",
+                "active": "Aktif",
+                "veryActive": "Sangat Aktif",
+            }.get((profile or {}).get("activity_level", "moderate"), "Sedang"),
+            "goal": {
+                "lose": "Turunkan Berat",
+                "maintain": "Pertahankan",
+                "gain": "Naikkan Berat",
+            }.get((profile or {}).get("goal", "maintain"), "Pertahankan"),
             "target_calories": target_calories,
             "total_cal": total_cal,
             "total_protein": total_protein,
