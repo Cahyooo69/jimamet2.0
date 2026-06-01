@@ -4,7 +4,10 @@ Session listings and details are cached for 30 seconds.
 """
 
 import os
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 import requests
 import google.genai as genai
@@ -259,7 +262,8 @@ class PredictionService:
                 contents=full_prompt,
             )
             return response.text.strip()
-        except Exception:
+        except Exception as e:
+            logger.error("[Gemini ERROR] %s: %s", type(e).__name__, e)
             return None
 
     @classmethod
@@ -285,5 +289,6 @@ class PredictionService:
             )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"].strip()
-        except Exception:
+        except Exception as e:
+            logger.error("[OpenRouter ERROR] %s: %s", type(e).__name__, e)
             return None

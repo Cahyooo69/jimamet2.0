@@ -75,6 +75,7 @@ SUPABASE_KEY=[YOUR_SUPABASE_SERVICE_ROLE_KEY]
 SUPABASE_REST_URL=https://[YOUR_PROJECT_REF].supabase.co/rest/v1/
 
 GEMINI_API_KEY=your-google-gemini-api-key
+OPENROUTER_API_KEY=your-openrouter-api-key  # opsional, fallback jika Gemini gagal
 SUPABASE_WEBHOOK_SECRET=isi-bebas-rahasia-anda
 ```
 
@@ -178,6 +179,17 @@ Login:
     → Cek tabel nutritionists dulu (plain password)
     → Jika bukan, cek tabel users (verify PBKDF2 hash)
     → Rotate token → Return token baru + role
+```
+
+### Alur NutriCoach AI → Konsultasi Ahli Gizi
+```
+1. User chat dengan NutriCoach AI di /dashboard/coach
+2. Jika AI mendeteksi kata kunci medis (diabetes, hamil, dll)
+   → Muncul tombol "🩺 Hubungi Ahli Gizi Sekarang"
+3. User klik tombol → Konsultasi terbuat di database
+4. Ahli gizi melihat & membalas di /ahli-gizi/pasien
+5. User melihat balasan ahli gizi di sidebar "Konsultasi Ahli Gizi"
+   pada halaman NutriCoach AI yang sama (klik Refresh untuk update)
 ```
 
 ---

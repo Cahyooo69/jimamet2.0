@@ -46,15 +46,11 @@ interface ConsultationChat {
   sent_at: string;
 }
 
-function getTimeStr() {
-  return new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-}
-
 function formatTime(iso: string) {
   try {
     const d = new Date(iso);
     return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
-  } catch (e) {
+  } catch {
     return "";
   }
 }
@@ -90,7 +86,6 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   cancelled: { label: "Dibatalkan", color: "#9ca3af" },
 };
 
-// View mode: "coach" = AI chat, "consultation" = nutritionist chat
 type ViewMode = "coach" | "consultation";
 
 export default function NutriCoachPage() {
@@ -101,10 +96,12 @@ export default function NutriCoachPage() {
 
   // Consultation state
   const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultationsLoaded, setConsultationsLoaded] = useState(false);
   const [activeConsultation, setActiveConsultation] = useState<string | null>(null);
   const [consultationChats, setConsultationChats] = useState<ConsultationChat[]>([]);
   const [consultationInput, setConsultationInput] = useState("");
   const [consultationSending, setConsultationSending] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Shared state
   const [viewMode, setViewMode] = useState<ViewMode>("coach");
@@ -115,14 +112,9 @@ export default function NutriCoachPage() {
 
   const [konsultasiStatus, setKonsultasiStatus] = useState<Record<string, "idle" | "loading" | "sent" | "error">>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const consultationPollRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadSessions();
-    loadConsultations();
-    return () => {
-      if (consultationPollRef.current) clearInterval(consultationPollRef.current);
-    };
   }, []);
 
   useEffect(() => {
@@ -152,7 +144,6 @@ export default function NutriCoachPage() {
     setActiveSession(sessionId);
     setActiveConsultation(null);
     setSidebarOpen(false);
-    if (consultationPollRef.current) clearInterval(consultationPollRef.current);
     try {
       const { ok, data } = await apiGetCoachSession(sessionId);
       if (ok) {
@@ -175,7 +166,6 @@ export default function NutriCoachPage() {
         setSidebarOpen(false);
       } else {
         alert(data?.error || "Gagal membuat sesi baru. Periksa backend.");
-        console.error("Failed to create session:", data);
       }
     } catch (e) {
       console.error(e);
@@ -271,7 +261,7 @@ export default function NutriCoachPage() {
         setKonsultasiStatus(prev => ({ ...prev, [msgId]: "sent" }));
         // Refresh consultations list
         await loadConsultations();
-        alert("Permintaan konsultasi berhasil dikirim! Anda bisa melihat balasan ahli gizi di tab 'Konsultasi Ahli Gizi' di sidebar.");
+        alert("Permintaan konsultasi berhasil dikirim! Klik tab 'Konsultasi Ahli Gizi' di sidebar untuk melihat balasan.");
       } else {
         throw new Error("Failed to create consultation");
       }
@@ -281,15 +271,22 @@ export default function NutriCoachPage() {
     }
   };
 
-  // ── Consultations ──
+  // ── Consultations (lazy load — hanya saat user butuh) ──
   const loadConsultations = async () => {
     try {
       const { ok, data } = await apiListConsultations();
       if (ok && Array.isArray(data)) {
         setConsultations(data);
+        setConsultationsLoaded(true);
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleShowConsultations = async () => {
+    if (!consultationsLoaded) {
+      await loadConsultations();
     }
   };
 
@@ -298,15 +295,7 @@ export default function NutriCoachPage() {
     setActiveConsultation(consultationId);
     setActiveSession(null);
     setSidebarOpen(false);
-
-    // Load chat messages
     await loadConsultationChat(consultationId);
-
-    // Start polling for new messages every 5 seconds
-    if (consultationPollRef.current) clearInterval(consultationPollRef.current);
-    consultationPollRef.current = setInterval(() => {
-      loadConsultationChat(consultationId);
-    }, 5000);
   };
 
   const loadConsultationChat = async (consultationId: string) => {
@@ -320,6 +309,14 @@ export default function NutriCoachPage() {
     }
   };
 
+  // Refresh: manual button — tidak pakai polling
+  const handleRefreshChat = async () => {
+    if (!activeConsultation || refreshing) return;
+    setRefreshing(true);
+    await loadConsultationChat(activeConsultation);
+    setRefreshing(false);
+  };
+
   const handleSendConsultationChat = async (e: FormEvent) => {
     e.preventDefault();
     if (!consultationInput.trim() || !activeConsultation || consultationSending) return;
@@ -331,6 +328,7 @@ export default function NutriCoachPage() {
     try {
       const { ok } = await apiSendChat(activeConsultation, text, "user");
       if (ok) {
+        // Refresh chat setelah kirim — satu kali saja
         await loadConsultationChat(activeConsultation);
       }
     } catch (e) {
@@ -340,12 +338,8 @@ export default function NutriCoachPage() {
     }
   };
 
-  // Filter consultations that belong to this user
-  const userConsultations = consultations;
-
   return (
     <div className={styles.layout}>
-      {/* Sidebar Overlay (Mobile) */}
       {sidebarOpen && (
         <div className={styles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />
       )}
@@ -391,14 +385,16 @@ export default function NutriCoachPage() {
           )}
         </div>
 
-        {/* Consultation Section in Sidebar */}
-        {userConsultations.length > 0 && (
-          <>
-            <div className={styles.sidebarDivider}>
-              <span>🩺 Konsultasi Ahli Gizi</span>
-            </div>
-            <div className={styles.sessionList}>
-              {userConsultations.map((c) => {
+        {/* Consultation Section — lazy loaded */}
+        <div className={styles.sidebarDivider} onClick={handleShowConsultations} style={{ cursor: "pointer" }}>
+          <span>🩺 Konsultasi Ahli Gizi {!consultationsLoaded && "(klik untuk muat)"}</span>
+        </div>
+        {consultationsLoaded && (
+          <div className={styles.sessionList}>
+            {consultations.length === 0 ? (
+              <div className={styles.emptySidebar}>Belum ada konsultasi</div>
+            ) : (
+              consultations.map((c) => {
                 const st = statusLabels[c.status] || statusLabels.pending;
                 return (
                   <div
@@ -407,9 +403,7 @@ export default function NutriCoachPage() {
                     onClick={() => selectConsultation(c.id)}
                   >
                     <div className={styles.sessionItemContent}>
-                      <div className={styles.sessionTitle}>
-                        🩺 Konsultasi
-                      </div>
+                      <div className={styles.sessionTitle}>🩺 Konsultasi</div>
                       <div className={styles.sessionTime}>
                         <span className={styles.statusBadge} style={{ color: st.color }}>● {st.label}</span>
                         {" · "}
@@ -418,9 +412,9 @@ export default function NutriCoachPage() {
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          </>
+              })
+            )}
+          </div>
         )}
       </aside>
 
@@ -454,9 +448,22 @@ export default function NutriCoachPage() {
               <div className={styles.headerInfo}>
                 <h2>Chat Ahli Gizi</h2>
                 <span className={styles.onlineStatus}>
-                  <span className={styles.onlineDotYellow}></span> Konsultasi Aktif
+                  <span className={styles.onlineDotYellow}></span> Konsultasi
                 </span>
               </div>
+              <button
+                className={styles.refreshBtn}
+                onClick={handleRefreshChat}
+                disabled={refreshing}
+                title="Muat pesan terbaru"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={refreshing ? styles.spinning : ""}>
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                {refreshing ? "Memuat..." : "Refresh"}
+              </button>
             </>
           )}
         </header>
@@ -505,7 +512,7 @@ export default function NutriCoachPage() {
                           </button>
                         )}
                         {msg.needs_consultation && konsultasiStatus[msg.id] === "sent" && (
-                          <div className={styles.konsultasiSent}>✅ Permintaan terkirim — cek sidebar "Konsultasi Ahli Gizi"</div>
+                          <div className={styles.konsultasiSent}>✅ Permintaan terkirim — cek sidebar &quot;Konsultasi Ahli Gizi&quot;</div>
                         )}
                       </div>
                     </div>
@@ -536,13 +543,12 @@ export default function NutriCoachPage() {
                 </div>
               ) : (
                 <>
-                  <div className={styles.consultationNotice}>
-                    💡 Pesan dari ahli gizi akan muncul otomatis. Halaman ini memperbarui setiap 5 detik.
-                  </div>
-
                   {consultationChats.length === 0 && (
                     <div className={styles.welcomeState}>
                       <p>Menunggu balasan dari ahli gizi... 🩺</p>
+                      <p style={{ fontSize: "0.85rem", color: "#999", marginTop: "0.5rem" }}>
+                        Klik tombol &quot;Refresh&quot; di atas untuk melihat pesan terbaru.
+                      </p>
                     </div>
                   )}
 
