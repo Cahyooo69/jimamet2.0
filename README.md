@@ -12,7 +12,6 @@ Proyek ini dibangun menggunakan:
 
 ## 🛠️ Persyaratan Sistem (Prerequisites)
 
-Sebelum menjalankan proyek ini, pastikan komputer Anda telah menginstal:
 1. **Node.js** (Minimal versi 18.x) & **npm**
 2. **Python** (Minimal versi 3.10)
 3. Akun **Supabase** (untuk database)
@@ -34,19 +33,15 @@ cd jimamet2.0
 
 1. Buat project baru di [Supabase Dashboard](https://supabase.com/dashboard).
 2. Buka menu **SQL Editor**.
-3. Salin seluruh isi file **`backend/sql/full_schema_migration.sql`** lalu *paste* ke SQL Editor.
-4. Klik **Run** untuk membuat semua tabel yang dibutuhkan.
-5. Jalankan juga file **`backend/sql/ahli_gizi_migration.sql`** untuk membuat tabel ahli gizi & konsultasi (beserta data dummy ahli gizi).
-6. Jalankan juga file **`backend/sql/chat_konsultasi_migration.sql`** untuk membuat tabel chat konsultasi.
-7. Buka menu **Project Settings → API** untuk mendapatkan **Project URL** dan **Service Role Key**.
+3. Salin seluruh isi file **`backend/sql/schema_v2.sql`** lalu *paste* ke SQL Editor.
+4. Klik **Run** untuk membuat semua tabel + data dummy ahli gizi.
+5. Buka menu **Project Settings → API** untuk mendapatkan **Project URL** dan **Service Role Key**.
 
-> ⚠️ Urutan eksekusi SQL: `full_schema_migration.sql` → `ahli_gizi_migration.sql` → `chat_konsultasi_migration.sql`
+> ⚠️ File `schema_v2.sql` sudah mencakup **semua** tabel dan seed data. Hanya perlu dijalankan **sekali saja**.
 
 ---
 
 ### 3. Setup Backend (Django)
-
-Buka terminal di folder `backend/`:
 
 ```bash
 cd backend
@@ -83,12 +78,12 @@ GEMINI_API_KEY=your-google-gemini-api-key
 SUPABASE_WEBHOOK_SECRET=isi-bebas-rahasia-anda
 ```
 
-**Jalankan Migrasi Django (hanya untuk struktur internal Django):**
+**Jalankan Migrasi Django (struktur internal Django saja):**
 ```bash
 python manage.py migrate
 ```
 
-> 💡 Perintah ini hanya membuat tabel internal Django (sesi, admin, dll). **Data user dan semua data aplikasi disimpan di Supabase**, bukan SQLite.
+> 💡 Perintah ini hanya membuat tabel internal Django (sesi, admin). **Semua data aplikasi disimpan di Supabase**.
 
 **Jalankan Server Backend:**
 ```bash
@@ -100,14 +95,10 @@ Server berjalan di `http://localhost:8000`.
 
 ### 4. Setup Frontend (Next.js)
 
-Buka terminal baru di folder `frontend/`:
+Buka terminal baru:
 
 ```bash
 cd frontend
-```
-
-**Install Dependencies:**
-```bash
 npm install
 ```
 
@@ -128,62 +119,76 @@ Buka browser dan akses **`http://localhost:3000`**.
 
 ## 💡 Arsitektur Sistem
 
-### Database — Supabase Only
-Seluruh data aplikasi disimpan di **Supabase (PostgreSQL)**. Tidak ada data user di SQLite.
+### Backend — MVC Architecture
+
+Backend menggunakan arsitektur **Model–Controller–Service** yang memisahkan tanggung jawab secara jelas:
+
+```
+Request → Controller → Service → Model → Supabase
+                                           ↓
+Response ← Controller ← Service ← Model ← Supabase
+```
+
+| Layer | Folder | Tanggung Jawab |
+|---|---|---|
+| **Controller** | `api/controllers/` | Menerima HTTP request, mengirim response |
+| **Service** | `api/services/` | Business logic (validasi, kalkulasi, dsb.) |
+| **Model** | `api/models/` | Data access layer (query ke Supabase) |
+| **Cache** | `api/cache.py` | Caching token & data sering diakses |
+| **Auth** | `api/supabase_auth.py` | Custom DRF authentication backend |
+
+### Database — Supabase Only (Schema V2)
+
+Seluruh data disimpan di **Supabase (PostgreSQL)** dengan penamaan English:
 
 | Tabel | Isi |
 |---|---|
-| `users` | Akun user (id_user, username, email, password hash, token sesi) |
-| `food_analysis` | Riwayat makanan yang dianalisis |
-| `history` | Rekapitulasi nutrisi harian |
-| `konsultasi` | Sesi konsultasi ke ahli gizi |
-| `chat_konsultasi` | Pesan chat antar user & ahli gizi |
-| `ahli_gizi` | Data akun ahli gizi |
+| `users` | Akun user (id, username, email, password hash, token) |
+| `food_records` | Riwayat makanan yang dianalisis |
+| `daily_summary` | Rekapitulasi nutrisi harian per user |
+| `images` | Gambar makanan yang di-upload |
+| `recommendations` | Rekomendasi nutrisi |
+| `nutritionists` | Akun ahli gizi |
+| `consultations` | Sesi konsultasi user → ahli gizi |
+| `consultation_messages` | Chat antar user & ahli gizi |
+| `coach_sessions` | Sesi chat NutriCoach AI |
+| `coach_messages` | Pesan chat dalam sesi NutriCoach AI |
 
 ### Autentikasi — Custom Supabase Token Auth
+
 - Tidak menggunakan Django User model atau `rest_framework.authtoken`
 - Password di-hash menggunakan **PBKDF2** (Django hasher)
 - Token sesi disimpan di kolom `users.token` di Supabase
 - Setiap login, token **dirotasi** (token baru digenerate)
-- Token diklaim melalui header: `Authorization: Token <token>`
+- Token auth di-**cache** 5 menit untuk performa
+- Header: `Authorization: Token <token>`
+- Mendukung 2 role: **user** (pasien) dan **ahli_gizi** (nutritionist)
 
 ### Alur Register & Login
 ```
 Register:
   Input (username, email, password)
-    → Hash password (PBKDF2)
-    → Generate token acak
-    → INSERT ke Supabase users table
-    → Return token + id_user (auto-increment)
+    → Controller menerima request
+    → AuthService.register() — validasi, hash, generate token
+    → UserModel.create() — INSERT ke Supabase
+    → Return token + id (BIGSERIAL auto-increment)
 
 Login:
   Input (username, password)
-    → SELECT dari Supabase by username
-    → Verify password hash
-    → Rotate token (generate baru, simpan ke Supabase)
-    → Return token baru
-```
-
-### Komunikasi Data
-```
-Frontend (Next.js)
-  → HTTP Request dengan Authorization: Token <token>
-  → Django REST Framework
-  → SupabaseTokenAuthentication (validasi token ke Supabase)
-  → View logic
-  → Supabase REST API
-  → Response ke Frontend
+    → Cek tabel nutritionists dulu (plain password)
+    → Jika bukan, cek tabel users (verify PBKDF2 hash)
+    → Rotate token → Return token baru + role
 ```
 
 ---
 
 ## 🔑 Akun Uji Coba (Test Credentials)
 
-**👨‍⚕️ Ahli Gizi (Nutritionist Portal)**
+**👨‍⚕️ Ahli Gizi (Nutritionist Portal — `/ahli-gizi`)**
 - **Username:** `drsarah`
 - **Password:** `Gizi1234!`
 
-**👤 Pasien (User Dashboard)**
+**👤 Pasien (User Dashboard — `/dashboard`)**
 - *Belum ada akun default.* Klik **"Belum punya akun? Daftar"** di halaman Login untuk membuat akun pasien baru.
 
 ---
@@ -194,22 +199,44 @@ Frontend (Next.js)
 jimamet2.0/
 ├── backend/
 │   ├── api/
-│   │   ├── views/          # auth, profile, food, dashboard, konsultasi, coachbot
-│   │   ├── supabase_auth.py    # Custom DRF auth backend (Supabase-based)
-│   │   └── supabase_client.py  # REST client untuk Supabase
-│   ├── config/             # Django settings, urls, wsgi
-│   ├── sql/                # SQL migration files untuk Supabase
-│   │   ├── full_schema_migration.sql   ← Jalankan ini dulu
-│   │   ├── ahli_gizi_migration.sql     ← Lalu ini
-│   │   └── chat_konsultasi_migration.sql ← Terakhir ini
+│   │   ├── controllers/        # HTTP layer (request → response)
+│   │   │   ├── auth_controller.py
+│   │   │   ├── profile_controller.py
+│   │   │   ├── analysis_controller.py
+│   │   │   ├── consultation_controller.py
+│   │   │   ├── coach_chat_controller.py
+│   │   │   └── prediction_controller.py
+│   │   ├── services/           # Business logic
+│   │   │   ├── auth_service.py
+│   │   │   ├── profile_service.py
+│   │   │   ├── analysis_service.py
+│   │   │   ├── consultation_service.py
+│   │   │   ├── coach_chat_service.py
+│   │   │   └── prediction_service.py
+│   │   ├── models/             # Data access layer (Supabase queries)
+│   │   │   ├── user_model.py
+│   │   │   ├── food_record_model.py
+│   │   │   ├── consultation_model.py
+│   │   │   ├── coach_session_model.py
+│   │   │   └── ...
+│   │   ├── supabase_auth.py    # Custom DRF auth backend
+│   │   ├── supabase_client.py  # REST client untuk Supabase
+│   │   ├── cache.py            # Caching layer (TTL-based)
+│   │   └── urls.py             # API route definitions
+│   ├── config/                 # Django settings, wsgi
+│   ├── sql/
+│   │   └── schema_v2.sql       # ← Jalankan ini di Supabase SQL Editor
 │   ├── .env.example
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── app/            # Next.js App Router pages
-│   │   ├── components/     # Reusable UI components
-│   │   └── lib/api/        # API client modules
-│   └── .env.local          # Buat sendiri (tidak di-commit)
+│   │   ├── app/
+│   │   │   ├── dashboard/      # User dashboard (pasien)
+│   │   │   ├── ahli-gizi/      # Nutritionist portal
+│   │   │   ├── login/          # Login & Register page
+│   │   │   └── page.tsx        # Landing page
+│   │   └── lib/api.ts          # API client (fetch helper)
+│   └── .env.local              # Buat sendiri (tidak di-commit)
 └── README.md
 ```
 
@@ -217,22 +244,49 @@ jimamet2.0/
 
 ## 🌐 API Endpoints
 
+### Auth
 | Method | Endpoint | Deskripsi | Auth |
 |---|---|---|---|
 | GET | `/api/health/` | Health check | ❌ |
 | POST | `/api/auth/register/` | Registrasi user baru | ❌ |
-| POST | `/api/auth/login/` | Login | ❌ |
-| POST | `/api/auth/logout/` | Logout | ✅ |
-| GET | `/api/auth/me/` | Info user saat ini | ✅ |
+| POST | `/api/auth/login/` | Login (user atau ahli gizi) | ❌ |
+| POST | `/api/auth/logout/` | Logout (hapus token) | ✅ |
+| GET | `/api/auth/me/` | Info user yang sedang login | ✅ |
+
+### Profile
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
 | GET | `/api/profile/` | Ambil profil user | ✅ |
 | PUT | `/api/profile/update/` | Update profil user | ✅ |
+
+### Food Analysis & Dashboard
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
 | GET | `/api/food/` | List riwayat makanan | ✅ |
-| POST | `/api/food/create/` | Tambah makanan | ✅ |
-| DELETE | `/api/food/<id>/delete/` | Hapus makanan | ✅ |
+| POST | `/api/food/create/` | Tambah catatan makanan | ✅ |
+| GET | `/api/food/<id>/` | Detail satu makanan | ✅ |
+| DELETE | `/api/food/<id>/delete/` | Hapus catatan makanan | ✅ |
 | GET | `/api/dashboard/summary/` | Ringkasan nutrisi harian | ✅ |
-| POST | `/api/coachbot/chat/` | Chat dengan NutriCoach AI | ✅ |
-| POST | `/api/konsultasi/create/` | Buat sesi konsultasi | ✅ |
-| GET | `/api/konsultasi/` | Daftar semua konsultasi | ❌ |
+
+### NutriCoach AI (Session-based)
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/coach/sessions/` | List sesi chat AI | ✅ |
+| POST | `/api/coach/sessions/create/` | Buat sesi baru | ✅ |
+| GET | `/api/coach/sessions/<id>/` | Detail sesi + pesan | ✅ |
+| DELETE | `/api/coach/sessions/<id>/delete/` | Hapus sesi | ✅ |
+| POST | `/api/coach/sessions/<id>/chat/` | Kirim pesan ke AI | ✅ |
+
+### Konsultasi (User ↔ Ahli Gizi)
+| Method | Endpoint | Deskripsi | Auth |
+|---|---|---|---|
+| GET | `/api/consultations/` | Daftar semua konsultasi | ❌ |
+| POST | `/api/consultations/create/` | Buat permintaan konsultasi | ✅ |
+| PATCH | `/api/consultations/<id>/update/` | Update status konsultasi | ❌ |
+| DELETE | `/api/consultations/<id>/delete/` | Hapus konsultasi | ❌ |
+| GET | `/api/consultations/<id>/chat/` | List pesan chat | ❌ |
+| POST | `/api/consultations/<id>/chat/send/` | Kirim pesan chat | ❌ |
+| DELETE | `/api/chat/<id>/delete/` | Hapus pesan chat | ❌ |
 
 ---
 
