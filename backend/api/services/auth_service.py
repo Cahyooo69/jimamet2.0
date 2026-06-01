@@ -91,7 +91,7 @@ class AuthService:
                     return {
                         "message": "Login berhasil.",
                         "token": f'ahligizi_{ag["id"]}',
-                        "role": "nutritionist",
+                        "role": "ahli_gizi",
                         "user": {
                             "id": ag["id"],
                             "username": ag["username"],
