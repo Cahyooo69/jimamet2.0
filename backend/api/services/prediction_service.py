@@ -7,7 +7,8 @@ import os
 from datetime import datetime, timedelta
 
 import requests
-import google.generativeai as genai
+import google.genai as genai
+from google.genai import types as genai_types
 
 from api.models import UserModel, FoodRecordModel, CoachSessionModel, CoachMessageModel
 from api import cache as app_cache
@@ -252,9 +253,11 @@ class PredictionService:
     def _call_gemini(cls, full_prompt: str, api_key: str) -> str | None:
         """Call Gemini API directly. Returns response text or None."""
         try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.5-flash")
-            response = model.generate_content(full_prompt)
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=full_prompt,
+            )
             return response.text.strip()
         except Exception:
             return None
