@@ -8,6 +8,8 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Selamat Pagi");
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<{ full_name?: string; username?: string } | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [hoveredMacro, setHoveredMacro] = useState<string | null>(null);
 
   const [summary, setSummary] = useState({
     total_calories: 0,
@@ -70,9 +72,9 @@ export default function DashboardPage() {
 
   const totalMacros = prot + carbs + fat || 1;
   const nutrientDonut = [
-    { name: "Protein", pct: Math.round((prot / totalMacros) * 100), color: "#2e7d32" },
-    { name: "Karbohidrat", pct: Math.round((carbs / totalMacros) * 100), color: "#4caf50" },
-    { name: "Lemak", pct: Math.round((fat / totalMacros) * 100), color: "#a5d6a7" },
+    { name: "Protein", pct: Math.round((prot / totalMacros) * 100), color: "#2e7d32", value: prot },
+    { name: "Karbohidrat", pct: Math.round((carbs / totalMacros) * 100), color: "#4caf50", value: carbs },
+    { name: "Lemak", pct: Math.round((fat / totalMacros) * 100), color: "#a5d6a7", value: fat },
   ];
 
   // Chart kalori: 7 hari terakhir
@@ -106,25 +108,47 @@ export default function DashboardPage() {
         <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
           {nutrientDonut.map((seg) => {
             const dash = (seg.pct / 100) * circumference;
+            const isHovered = hoveredMacro === seg.name;
+            const opacity = hoveredMacro && !isHovered ? 0.3 : 1;
+            const currentStroke = isHovered ? "24" : "20"; // sedikit membesar saat disorot
+
             const el = (
               <circle
                 key={seg.name} cx={cx} cy={cy} r={r} fill="none"
-                stroke={seg.color} strokeWidth="20"
-                strokeDasharray={`${dash - 4} ${circumference - dash + 4}`}
+                stroke={seg.color} strokeWidth={currentStroke}
+                strokeDasharray={`${Math.max(0, dash - 4)} ${circumference}`}
                 strokeDashoffset={-offset}
                 transform={`rotate(-90 ${cx} ${cy})`}
                 className={styles.donutSegment}
+                style={{ cursor: "pointer", transition: "all 0.2s ease" }}
+                opacity={opacity}
+                onMouseEnter={() => setHoveredMacro(seg.name)}
+                onMouseLeave={() => setHoveredMacro(null)}
               />
             );
             offset += dash;
             return el;
           })}
-          <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--on-surface)" fontSize="22" fontWeight="700" fontFamily="Plus Jakarta Sans">
-            {cals}
-          </text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fill="var(--on-surface-variant)" fontSize="11" fontFamily="Inter">
-            / {target} kkal
-          </text>
+          
+          {hoveredMacro ? (
+            <>
+              <text x={cx} y={cy - 2} textAnchor="middle" fill="var(--on-surface)" fontSize="24" fontWeight="800" fontFamily="Plus Jakarta Sans">
+                {nutrientDonut.find(n => n.name === hoveredMacro)?.value}g
+              </text>
+              <text x={cx} y={cy + 16} textAnchor="middle" fill={nutrientDonut.find(n => n.name === hoveredMacro)?.color} fontSize="12" fontWeight="600" fontFamily="Inter">
+                {hoveredMacro}
+              </text>
+            </>
+          ) : (
+            <>
+              <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--on-surface)" fontSize="22" fontWeight="700" fontFamily="Plus Jakarta Sans">
+                {cals}
+              </text>
+              <text x={cx} y={cy + 12} textAnchor="middle" fill="var(--on-surface-variant)" fontSize="11" fontFamily="Inter">
+                / {target} kkal
+              </text>
+            </>
+          )}
         </svg>
         <div className={styles.donutLegend}>
           {nutrientDonut.map((seg) => (
@@ -140,7 +164,12 @@ export default function DashboardPage() {
   }
 
   function renderBarChart() {
-    const maxVal = 2500, barW = 36, gap = 20, chartH = 180;
+    // Cari nilai tertinggi dari target atau data kalori untuk skala Y dinamis
+    const highestVal = Math.max(...calorieData.map(d => d.value), target);
+    // Skala atas dengan pembulatan ke kelipatan 500 terdekat (+sedikit ruang)
+    const maxVal = Math.max(2000, Math.ceil((highestVal + 200) / 500) * 500); 
+    
+    const barW = 36, gap = 20, chartH = 180;
     const chartW = calorieData.length * (barW + gap);
 
     return (
@@ -155,11 +184,35 @@ export default function DashboardPage() {
         {calorieData.map((d, i) => {
           const h = (d.value / maxVal) * chartH;
           const x = 40 + i * (barW + gap);
+          const isHovered = hoveredDay === d.day;
+          const opacity = hoveredDay && !isHovered ? 0.3 : 1;
+          
           return (
-            <g key={d.day}>
+            <g 
+              key={d.day}
+              onMouseEnter={() => setHoveredDay(d.day)}
+              onMouseLeave={() => setHoveredDay(null)}
+              style={{ cursor: "pointer", transition: "opacity 0.2s ease" }}
+              opacity={opacity}
+            >
+              {/* Invisible rect to increase hover hit area */}
+              <rect x={x - gap/2} y="0" width={barW + gap} height={chartH + 30} fill="transparent" />
+              
               <rect x={x} y={chartH - h + 12} width={barW} height={h} rx="6" ry="6" fill={d.value > d.target ? "url(#barOver)" : "url(#barNormal)"} className={styles.bar} />
-              <text x={x + barW / 2} y={chartH + 30} textAnchor="middle" fill="var(--on-surface-variant)" fontSize="12">{d.day}</text>
-              <text x={x + barW / 2} y={chartH - h + 6} textAnchor="middle" fill="var(--on-surface-variant)" fontSize="10">{d.value}</text>
+              
+              <text x={x + barW / 2} y={chartH + 30} textAnchor="middle" fill={isHovered ? "var(--on-surface)" : "var(--on-surface-variant)"} fontSize="12" fontWeight={isHovered ? "600" : "400"}>{d.day}</text>
+              <text x={x + barW / 2} y={chartH - h + 6} textAnchor="middle" fill="var(--on-surface-variant)" fontSize="10" opacity={isHovered ? 0 : 1}>{d.value}</text>
+              
+              {/* Tooltip */}
+              {isHovered && (
+                <g transform={`translate(${x + barW / 2}, ${chartH - h - 14})`}>
+                  <rect x="-35" y="-24" width="70" height="24" rx="6" fill="var(--on-surface)" />
+                  <polygon points="-6,0 6,0 0,6" fill="var(--on-surface)" />
+                  <text x="0" y="-7" textAnchor="middle" fill="var(--surface)" fontSize="12" fontWeight="700">
+                    {d.value} kkal
+                  </text>
+                </g>
+              )}
             </g>
           );
         })}

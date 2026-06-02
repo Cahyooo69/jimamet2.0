@@ -196,13 +196,13 @@
   opacity: 0.85;
 }
 
-/* ── Donut ── */
 .donutWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 28px;
   flex-wrap: wrap;
+  flex: 1; /* Penuhi ruang tersisa agar berada tepat di tengah (vertikal) */
 }
 
 .donutSegment {
