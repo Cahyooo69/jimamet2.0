@@ -44,6 +44,7 @@ class ConsultationService:
                     "coach_message": r.get("coach_message"),
                     "status": r.get("status"),
                     "nutritionist_notes": r.get("nutritionist_notes", ""),
+                    "handled_by": r.get("handled_by", ""),
                     "created_at": r.get("created_at"),
                 }
             )
@@ -61,6 +62,8 @@ class ConsultationService:
             update_data["status"] = data["status"]
         if "nutritionist_notes" in data:
             update_data["nutritionist_notes"] = data["nutritionist_notes"]
+        if "handled_by" in data:
+            update_data["handled_by"] = data["handled_by"]
         if not update_data:
             raise ValueError("No fields to update.")
 
@@ -70,3 +73,37 @@ class ConsultationService:
     def delete_consultation(cls, consultation_id) -> bool:
         """Delete a consultation record."""
         return ConsultationModel.delete(consultation_id)
+
+    @classmethod
+    def get_patient_details(cls, consultation_id: str) -> dict:
+        """Get patient profile and recent food history for a consultation."""
+        from api.supabase_client import supabase
+
+        consultation = ConsultationModel.find_by_id(consultation_id)
+        if not consultation:
+            raise ValueError("Consultation not found.")
+
+        user_id = consultation["user_id"]
+
+        # Get user profile
+        user_row = UserModel.find_by_id(user_id) or {}
+        user_row.pop("password", None)
+
+        # Get recent food records (last 50, newest first)
+        try:
+            food_history = supabase.select("food_records", {
+                "user_id": f"eq.{user_id}",
+                "order": "recorded_at.desc",
+                "limit": "50",
+            })
+        except Exception:
+            food_history = []
+
+        return {
+            "consultation": {
+                **consultation,
+                "handled_by": consultation.get("handled_by", "")
+            },
+            "profile": user_row,
+            "food_history": food_history,
+        }

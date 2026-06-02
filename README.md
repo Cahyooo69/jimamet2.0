@@ -4,9 +4,10 @@ Jimamet adalah platform analisis nutrisi klinis berbasis AI yang memungkinkan pe
 
 Proyek ini dibangun menggunakan:
 - **Frontend**: Next.js (React), TypeScript, CSS Modules
-- **Backend**: Django (Python), Django REST Framework
+- **Backend**: Django (Python), Django REST Framework, Daphne (ASGI)
 - **Database**: Supabase (PostgreSQL) — satu-satunya database, tidak ada SQLite
-- **AI Engine**: Google Gemini 2.5 Flash (untuk NutriCoach AI)
+- **AI Engine (Chat)**: Google Gemini 2.5 Flash (untuk NutriCoach AI)
+- **AI Engine (Vision)**: Ultralytics YOLOv8 (Pendeteksi Makanan via file `best.pt`)
 
 ---
 
@@ -16,6 +17,7 @@ Proyek ini dibangun menggunakan:
 2. **Python** (Minimal versi 3.10)
 3. Akun **Supabase** (untuk database)
 4. Akun **Google AI Studio** (untuk Gemini API Key)
+5. Model **YOLOv8** khusus (`best.pt`) untuk deteksi makanan. Simpan di folder `backend/ml_models/`.
 
 ---
 

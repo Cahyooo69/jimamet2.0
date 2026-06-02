@@ -5,7 +5,7 @@ Dashboard summary is cached for 60 seconds per user+date.
 
 from datetime import date, datetime, timedelta
 
-from api.models import FoodRecordModel
+from api.models import FoodRecordModel, UserModel
 from api import cache as app_cache
 
 
@@ -127,10 +127,15 @@ class AnalysisService:
         total_fat = sum(float(r.get("fat", 0) or 0) for r in today_rows)
         total_carbs = sum(float(r.get("carbs", 0) or 0) for r in today_rows)
 
+        # Ambil target kalori dari profil user
+        user_profile = UserModel.find_by_id(user_id)
+        target_calories = user_profile.get("daily_calorie_target") if user_profile else 2000
+        
         result = {
             "date": target_date,
             "total_meals": len(today_rows),
             "total_calories": total_cal,
+            "target_calories": target_calories,
             "total_protein": total_protein,
             "total_carbs": total_carbs,
             "total_fat": total_fat,

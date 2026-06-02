@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./login.module.css";
 import { apiLogin, apiRegister } from "@/lib/api";
 
@@ -156,16 +157,7 @@ function LoginForm() {
         />
         <div className={styles.leftContent}>
           <Link href="/" className={styles.leftLogo}>
-            <svg viewBox="0 0 32 32" fill="none" width="32" height="32">
-              <circle cx="16" cy="16" r="14" fill="white" fillOpacity="0.2" />
-              <circle cx="16" cy="16" r="12" fill="white" fillOpacity="0.3" />
-              <path
-                d="M16 8c-2 0-4 1-5 3s-1 4.5 0 6.5c1.5 3 5 6.5 5 6.5s3.5-3.5 5-6.5c1-2 1-4.5 0-6.5s-3-3-5-3z"
-                fill="white"
-                fillOpacity="0.9"
-              />
-              <path d="M16 10v10" stroke="#2e7d32" strokeWidth="1.2" />
-            </svg>
+            <Image src="/jimamet_logo.webp" alt="Jimamet Logo" width={80} height={80} style={{ objectFit: 'contain' }} />
             <span>Jimamet</span>
           </Link>
           <div className={styles.leftText}>

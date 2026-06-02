@@ -504,6 +504,24 @@
   to { transform: rotate(360deg); }
 }
 
+/* WebSocket Badge */
+.wsBadge {
+  margin-left: auto;
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.onlineDotRed {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #f44336;
+  border-radius: 50%;
+  margin-right: 4px;
+}
 
 @media (max-width: 768px) {
 

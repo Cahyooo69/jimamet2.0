@@ -218,7 +218,7 @@ export async function apiCreateConsultation(coach_message: string) {
 
 export async function apiUpdateConsultation(
   id: string,
-  data: { status?: string; nutritionist_notes?: string }
+  data: { status?: string; nutritionist_notes?: string; handled_by?: string }
 ) {
   const res = await apiFetch(`/consultations/${id}/update/`, {
     method: "PATCH",
@@ -232,6 +232,12 @@ export async function apiDeleteConsultation(id: string) {
   const res = await apiFetch(`/consultations/${id}/delete/`, {
     method: "DELETE",
   });
+  const json = await res.json();
+  return { ok: res.ok, data: json };
+}
+
+export async function apiGetPatientDetails(consultationId: string) {
+  const res = await apiFetch(`/consultations/${consultationId}/patient/`);
   const json = await res.json();
   return { ok: res.ok, data: json };
 }

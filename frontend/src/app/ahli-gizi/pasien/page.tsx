@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import styles from "../ahli-gizi.module.css";
 import { apiListConsultations, apiUpdateConsultation, apiListChat, apiSendChat, apiDeleteChat, apiDeleteConsultation } from "@/lib/api";
 
@@ -19,6 +20,7 @@ interface Consultation {
   coach_message: string;
   status: "pending" | "completed" | "cancelled";
   nutritionist_notes: string;
+  handled_by?: string;
   created_at: string;
 }
 
@@ -37,6 +39,7 @@ const statusStyle = {
 };
 
 export default function KonsultasiPage() {
+  const router = useRouter();
   const [items, setItems] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"semua" | "pending" | "completed">("semua");
@@ -45,30 +48,68 @@ export default function KonsultasiPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Live Chat state
+  // Live Chat state (WebSocket)
   const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
-  const pollChat = useCallback(async (kId: string) => {
+  const loadChatHistory = useCallback(async (kId: string) => {
     const { ok, data } = await apiListChat(kId);
     if (ok && Array.isArray(data)) {
       setChatMsgs(data);
     }
   }, []);
 
-  // Set up polling for chat messages when a consultation is selected
+  const connectWebSocket = useCallback((consultationId: string) => {
+    if (wsRef.current) wsRef.current.close();
+
+    const ws = new WebSocket(`ws://localhost:8000/ws/consultation/${consultationId}/`);
+
+    ws.onopen = () => {
+      console.log("[WS Nutritionist] Connected to", consultationId);
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "chat_message") {
+        setChatMsgs((prev) => {
+          if (prev.some(m => m.id === data.id && data.id !== "")) return prev;
+          return [...prev, {
+            id: data.id || `ws-${Date.now()}`,
+            consultation_id: consultationId,
+            sender: data.sender,
+            message: data.message,
+            sent_at: data.sent_at,
+          }];
+        });
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("[WS Nutritionist] Disconnected");
+      setWsConnected(false);
+    };
+
+    ws.onerror = () => setWsConnected(false);
+
+    wsRef.current = ws;
+  }, []);
+
+  // Connect WS when consultation is selected
   useEffect(() => {
     if (selected && selected.status === "pending") {
-      pollChat(selected.id);
-      pollRef.current = setInterval(() => pollChat(selected.id), 5000);
+      loadChatHistory(selected.id);
+      connectWebSocket(selected.id);
     } else {
       setChatMsgs([]);
+      if (wsRef.current) { wsRef.current.close(); wsRef.current = null; setWsConnected(false); }
     }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [selected, pollChat]);
+    return () => { if (wsRef.current) { wsRef.current.close(); wsRef.current = null; } };
+  }, [selected, loadChatHistory, connectWebSocket]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -100,11 +141,27 @@ export default function KonsultasiPage() {
     
     setChatSending(true);
     const text = chatInput.trim();
-    setChatInput(""); // Clear input immediately for better UX
+    setChatInput("");
     
-    const { ok } = await apiSendChat(selected.id, text, "nutritionist");
+    const { ok, data } = await apiSendChat(selected.id, text, "nutritionist");
     if (ok) {
-      await pollChat(selected.id);
+      // Broadcast via WebSocket
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          id: data?.id || `sent-${Date.now()}`,
+          message: text,
+          sender: "nutritionist",
+          sent_at: new Date().toISOString(),
+        }));
+      } else {
+        setChatMsgs((prev) => [...prev, {
+          id: data?.id || `local-${Date.now()}`,
+          consultation_id: selected.id,
+          sender: "nutritionist",
+          message: text,
+          sent_at: new Date().toISOString(),
+        }]);
+      }
     }
     setChatSending(false);
   };
@@ -114,7 +171,7 @@ export default function KonsultasiPage() {
     
     const { ok } = await apiDeleteChat(chatId);
     if (ok && selected) {
-      await pollChat(selected.id);
+      await loadChatHistory(selected.id);
     } else {
       alert("Gagal menghapus pesan chat.");
     }
@@ -161,7 +218,8 @@ export default function KonsultasiPage() {
     filter === "semua" ? true : i.status === filter
   );
 
-  const countMenunggu = items.filter((i) => i.status === "pending").length;
+  const countMenunggu = items.filter((i) => i.status === "pending" && !i.handled_by).length;
+  const countAktif    = items.filter((i) => i.handled_by).length;
   const countSelesai  = items.filter((i) => i.status === "completed").length;
 
   return (
@@ -190,11 +248,11 @@ export default function KonsultasiPage() {
         </div>
       )}
 
-      {/* ── Stat mini ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 20 }}>
         {[
           { label: "Total Masuk", count: items.length, color: "#0d631b" },
           { label: "Menunggu",    count: countMenunggu, color: "#f57c00" },
+          { label: "Ditangani",   count: countAktif,    color: "#1976d2" },
           { label: "Selesai",     count: countSelesai,  color: "#2e7d32" },
         ].map(({ label, count, color }) => (
           <div key={label} className={styles.statCard}>
@@ -246,11 +304,15 @@ export default function KonsultasiPage() {
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
             {displayed.map((item) => {
-              const s = statusStyle[item.status];
+              let rawStatus = item.status || "pending";
+              let s = statusStyle[rawStatus as keyof typeof statusStyle] || statusStyle.pending;
+              if (item.handled_by && rawStatus === "pending") {
+                s = { bg: "rgba(25,118,210,0.12)", color: "#1976d2", label: `Ditangani: ${item.handled_by}` };
+              }
               return (
                 <div
                   key={item.id}
-                  onClick={() => handleOpenDetail(item)}
+                  onClick={() => router.push(`/ahli-gizi/pasien/${item.id}`)}
                   style={{
                     display: "flex", alignItems: "flex-start", gap: 16,
                     padding: "16px 0", borderBottom: "1px solid var(--ag-border)",

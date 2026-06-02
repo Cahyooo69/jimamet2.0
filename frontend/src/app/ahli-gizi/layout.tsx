@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./ahli-gizi.module.css";
 
 export default function AhliGiziLayout({ children }: { children: React.ReactNode }) {
@@ -18,7 +19,7 @@ export default function AhliGiziLayout({ children }: { children: React.ReactNode
       return;
     }
     if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch {}
+      try { setUser(JSON.parse(storedUser)); } catch { }
     }
   }, [router]);
 
@@ -39,7 +40,9 @@ export default function AhliGiziLayout({ children }: { children: React.ReactNode
       {/* ── Sidebar ── */}
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <span className={styles.brandIcon}>🩺</span>
+          <span className={styles.brandIcon}>
+            <Image src="/jimamet_logo.webp" alt="Jimamet Logo" width={48} height={48} style={{ objectFit: 'contain' }} />
+          </span>
           <div>
             <div className={styles.brandName}>Jimamet Expert</div>
             <div className={styles.brandSub}>Portal Ahli Gizi</div>

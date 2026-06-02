@@ -34,6 +34,7 @@ urlpatterns = [
     path('consultations/create/', views.create_consultation, name='create_consultation'),
     path('consultations/<str:consultation_id>/update/', views.update_consultation, name='update_consultation'),
     path('consultations/<str:consultation_id>/delete/', views.delete_consultation, name='delete_consultation'),
+    path('consultations/<str:consultation_id>/patient/', views.get_patient_details, name='get_patient_details'),
 
     # Consultation Chat (User ↔ Nutritionist)
     path('consultations/<str:consultation_id>/chat/', views.list_chat, name='list_chat'),
@@ -46,4 +47,7 @@ urlpatterns = [
     path('coach/sessions/<str:session_id>/', views.get_session, name='get_session'),
     path('coach/sessions/<str:session_id>/delete/', views.delete_session, name='delete_session'),
     path('coach/sessions/<str:session_id>/chat/', views.coachbot_chat, name='coachbot_chat'),
+
+    # ML YOLO Detection
+    path('detect-food/', views.detect_food_api, name='detect_food_api'),
 ]

@@ -1,0 +1,515 @@
+/* ─────────────────────────────────────────────────
+   Consultation Chat Page — Full-width layout
+   Patient info sidebar + Chat area
+───────────────────────────────────────────────── */
+
+.chatPage {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+/* ── Loading ── */
+.loadingPage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #707a6c;
+  gap: 16px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #2e7d32;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Patient Info Panel ── */
+.infoPanel {
+  width: 340px;
+  min-width: 340px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.infoPanelHeader {
+  padding: 20px 20px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.backBtn {
+  font-size: 13px;
+  color: #2e7d32;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.backBtn:hover {
+  text-decoration: underline;
+}
+
+.infoPanelHeader h2 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1c1c;
+  margin: 0 0 2px;
+}
+
+.infoEmail {
+  font-size: 13px;
+  color: #707a6c;
+  margin: 0;
+}
+
+/* ── Tabs ── */
+.tabBar {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #707a6c;
+  cursor: pointer;
+  transition: color 0.2s, border-bottom 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: #2e7d32;
+}
+
+.tabActive {
+  color: #2e7d32 !important;
+  border-bottom-color: #2e7d32 !important;
+}
+
+/* ── Info Content ── */
+.infoContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+/* ── Profile Section ── */
+.profileSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.profileItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f5f7f5;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.profileLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: #707a6c;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profileValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1c1c;
+}
+
+/* ── Today Summary ── */
+.todaySummary {
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.06), rgba(76, 175, 80, 0.08));
+  border: 1px solid rgba(46, 125, 50, 0.15);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.todaySummary h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e7d32;
+  margin: 0 0 10px;
+}
+
+.nutriGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.nutriItem {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nutriVal {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1c1c;
+}
+
+.nutriLabel {
+  font-size: 10px;
+  color: #707a6c;
+  font-weight: 600;
+}
+
+/* ── Notes ── */
+.notesSection h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1c1c;
+  margin: 0 0 8px;
+}
+
+.notesInput {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.notesInput:focus {
+  border-color: #2e7d32;
+}
+
+.saveNotesBtn {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.saveNotesBtn:hover { background: #1b5e20; }
+.saveNotesBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.selesaiBtn {
+  padding: 10px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+
+.selesaiBtn:hover {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+/* ── Food Section ── */
+.foodSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emptyFood {
+  text-align: center;
+  color: #707a6c;
+  font-size: 14px;
+  padding: 32px 0;
+}
+
+.foodList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.foodItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.foodItem:hover {
+  background: #f0f4f0;
+}
+
+.foodEmoji {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.foodInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.foodName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1c1c;
+}
+
+.foodMeta {
+  font-size: 12px;
+  color: #707a6c;
+}
+
+.foodDate {
+  font-size: 11px;
+  color: #a0a7a0;
+}
+
+/* ═══════════════════════════════════════════════════
+   CHAT AREA
+═══════════════════════════════════════════════════ */
+
+.chatMain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Header ── */
+.chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.chatHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chatAvatar {
+  font-size: 28px;
+}
+
+.chatHeader h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1c1c;
+  margin: 0;
+}
+
+.wsStatus {
+  font-size: 12px;
+  color: #707a6c;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wsDotGreen, .wsDotRed {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.wsDotGreen { background: #4caf50; }
+.wsDotRed { background: #f44336; }
+
+/* ── Messages ── */
+.chatMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chatEmpty {
+  text-align: center;
+  color: #999;
+  padding: 48px 0;
+  font-size: 14px;
+}
+
+.msgRow {
+  display: flex;
+}
+
+.msgRowLeft {
+  justify-content: flex-start;
+}
+
+.msgRowRight {
+  justify-content: flex-end;
+}
+
+.msgBubble {
+  max-width: 65%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.msgBubble p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.msgBubbleLeft {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  color: #1a1c1c;
+  border-bottom-left-radius: 4px;
+}
+
+.msgBubbleRight {
+  background: linear-gradient(135deg, #2e7d32, #388e3c);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.msgFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+}
+
+.msgTime {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.msgDeleteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.5;
+  padding: 2px;
+  transition: opacity 0.15s;
+}
+
+.msgDeleteBtn:hover {
+  opacity: 1;
+}
+
+/* ── Input Bar ── */
+.chatInputBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.chatInput {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 24px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.chatInput:focus {
+  border-color: #2e7d32;
+}
+
+.chatSendBtn {
+  padding: 10px 24px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chatSendBtn:hover:not(:disabled) {
+  background: #1b5e20;
+}
+
+.chatSendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .chatPage {
+    flex-direction: column;
+  }
+
+  .infoPanel {
+    width: 100%;
+    min-width: unset;
+    max-height: 50vh;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+}

@@ -26,6 +26,7 @@ from api.controllers.consultation_controller import (
     list_consultations,
     update_consultation,
     delete_consultation,
+    get_patient_details,
 )
 from api.controllers.coach_chat_controller import (
     list_chat,
@@ -39,6 +40,9 @@ from api.controllers.prediction_controller import (
     get_session,
     delete_session,
 )
+from api.controllers.detection_controller import (
+    detect_food_api,
+)
 
 __all__ = [
     'health_check',
@@ -46,7 +50,8 @@ __all__ = [
     'get_profile', 'update_profile',
     'list_food_records', 'create_food_record', 'get_food_record', 'delete_food_record',
     'dashboard_summary',
-    'create_consultation', 'list_consultations', 'update_consultation', 'delete_consultation',
+    'create_consultation', 'list_consultations', 'update_consultation', 'delete_consultation', 'get_patient_details',
     'list_chat', 'send_chat', 'delete_chat',
     'coachbot_chat', 'list_sessions', 'create_session', 'get_session', 'delete_session',
+    'detect_food_api',
 ]

@@ -16,6 +16,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # Application definition
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -25,6 +26,7 @@ INSTALLED_APPS = [
     # Third party
     "rest_framework",
     "corsheaders",
+    "channels",
     # Local apps
     "api",
 ]
@@ -59,6 +61,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 # Database — using SQLite for Django auth, Supabase for app data
 DATABASES = {
@@ -75,6 +78,13 @@ CACHES = {
         "LOCATION": "jimamet-cache",
         "OPTIONS": {"MAX_ENTRIES": 1000},
     }
+}
+
+# Django Channels — in-memory layer (single server)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
 }
 
 # Supabase configuration

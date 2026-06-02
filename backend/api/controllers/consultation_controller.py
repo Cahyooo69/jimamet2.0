@@ -66,3 +66,17 @@ def delete_consultation(request, consultation_id):
         return Response({"message": "Consultation deleted successfully."})
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def get_patient_details(request, consultation_id):
+    """Nutritionist gets patient profile and food history for a consultation."""
+    try:
+        result = ConsultationService.get_patient_details(consultation_id)
+        return Response(result)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

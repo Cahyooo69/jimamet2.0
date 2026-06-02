@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { isLoggedIn, getCurrentUser, apiLogout } from "@/lib/api";
 import styles from "./dashboard-layout.module.css";
@@ -117,11 +118,7 @@ export default function DashboardLayout({
               </svg>
             </button>
             <Link href="/" className={styles.logo}>
-              <svg viewBox="0 0 32 32" fill="none" width="30" height="30">
-                <circle cx="16" cy="16" r="14" fill="#2e7d32" />
-                <path d="M16 8c-2 0-4 1-5 3s-1 4.5 0 6.5c1.5 3 5 6.5 5 6.5s3.5-3.5 5-6.5c1-2 1-4.5 0-6.5s-3-3-5-3z" fill="#a3f69c" />
-                <path d="M16 10v10" stroke="#2e7d32" strokeWidth="1.2" />
-              </svg>
+              <Image src="/jimamet_logo.webp" alt="Jimamet Logo" width={40} height={40} style={{ objectFit: 'contain' }} />
               <span>Jimamet</span>
             </Link>
           </div>

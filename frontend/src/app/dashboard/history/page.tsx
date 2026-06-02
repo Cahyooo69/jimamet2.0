@@ -54,14 +54,14 @@ export default function HistoryPage() {
     apiListFoodRecords().then(({ ok, data }) => {
       if (ok && Array.isArray(data) && data.length > 0) {
         const mapped: MealRecord[] = data.map((r: Record<string, unknown>) => ({
-          id: (r.id_analysis as string) || Math.random().toString(),
-          date: formatDate(r.tanggal as string),
-          time: formatTime(r.tanggal as string),
-          name: r.nama_makanan as string,
-          calories: (r.kalori as number) || 0,
+          id: (r.id_analysis as string) || (r.id as string) || Math.random().toString(),
+          date: formatDate((r.tanggal as string) || (r.recorded_at as string)),
+          time: formatTime((r.tanggal as string) || (r.recorded_at as string)),
+          name: (r.nama_makanan as string) || (r.food_name as string) || "Makanan",
+          calories: (r.kalori as number) || (r.calories as number) || 0,
           protein: (r.protein as number) || 0,
-          carbs: (r.karbohidrat as number) || 0,
-          fat: (r.lemak as number) || 0,
+          carbs: (r.karbohidrat as number) || (r.carbs as number) || 0,
+          fat: (r.lemak as number) || (r.fat as number) || 0,
           emoji: "🍽️",
         }));
         setAllData(mapped);
@@ -71,7 +71,8 @@ export default function HistoryPage() {
   }, []);
 
   const filteredData = allData.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const itemName = item.name || "";
+    const matchesSearch = itemName.toLowerCase().includes(searchQuery.toLowerCase());
     if (filter === "today") return matchesSearch && isToday(item.date);
     if (filter === "week") return matchesSearch && isThisWeek(item.date);
     return matchesSearch;

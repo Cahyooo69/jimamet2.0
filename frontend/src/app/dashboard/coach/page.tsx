@@ -35,6 +35,7 @@ interface Consultation {
   user_id: string;
   coach_message: string;
   status: "pending" | "completed" | "cancelled";
+  handled_by?: string;
   created_at: string;
 }
 
@@ -101,7 +102,7 @@ export default function NutriCoachPage() {
   const [consultationChats, setConsultationChats] = useState<ConsultationChat[]>([]);
   const [consultationInput, setConsultationInput] = useState("");
   const [consultationSending, setConsultationSending] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
 
   // Shared state
   const [viewMode, setViewMode] = useState<ViewMode>("coach");
@@ -112,9 +113,14 @@ export default function NutriCoachPage() {
 
   const [konsultasiStatus, setKonsultasiStatus] = useState<Record<string, "idle" | "loading" | "sent" | "error">>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     loadSessions();
+    return () => {
+      // Cleanup WebSocket on unmount
+      if (wsRef.current) wsRef.current.close();
+    };
   }, []);
 
   useEffect(() => {
@@ -144,6 +150,8 @@ export default function NutriCoachPage() {
     setActiveSession(sessionId);
     setActiveConsultation(null);
     setSidebarOpen(false);
+    // Disconnect WebSocket when switching to AI chat
+    if (wsRef.current) { wsRef.current.close(); wsRef.current = null; setWsConnected(false); }
     try {
       const { ok, data } = await apiGetCoachSession(sessionId);
       if (ok) {
@@ -164,6 +172,7 @@ export default function NutriCoachPage() {
         setViewMode("coach");
         setMessages([]);
         setSidebarOpen(false);
+        if (wsRef.current) { wsRef.current.close(); wsRef.current = null; setWsConnected(false); }
       } else {
         alert(data?.error || "Gagal membuat sesi baru. Periksa backend.");
       }
@@ -258,10 +267,33 @@ export default function NutriCoachPage() {
       const { ok, data } = await apiCreateConsultation(pesanCoachbot);
       if (ok && data?.id) {
         await apiSendChat(data.id, "Halo Ahli Gizi, saya diarahkan oleh NutriCoach AI untuk berkonsultasi.", "user");
+        
+        // Tandai sebagai terkirim (menyembunyikan tombol)
         setKonsultasiStatus(prev => ({ ...prev, [msgId]: "sent" }));
-        // Refresh consultations list
+        
+        // Tampilkan pesan penutup dari CoachBot
+        const closingMsg: ChatMessage = {
+          id: `closing-${Date.now()}`,
+          session_id: activeSession || "",
+          sender: "ai",
+          message: "✅ Permintaan konsultasimu sudah saya teruskan ke Ahli Gizi! 🩺\n\nSilakan cek menu **\"Konsultasi Ahli Gizi\"** di sidebar untuk melanjutkan percakapan dengan ahli gizi kami. Semoga lekas mendapat solusi terbaik! 💪",
+          needs_consultation: false,
+          sent_at: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, closingMsg]);
+        
         await loadConsultations();
-        alert("Permintaan konsultasi berhasil dikirim! Klik tab 'Konsultasi Ahli Gizi' di sidebar untuk melihat balasan.");
+        
+        // Tutup sesi ini setelah 3 detik agar user sempat membaca
+        setTimeout(async () => {
+          if (activeSession) {
+            const sessionId = activeSession;
+            setActiveSession(null);
+            setMessages([]);
+            setSessions(prev => prev.filter(s => s.id !== sessionId));
+            await apiDeleteCoachSession(sessionId);
+          }
+        }, 3000);
       } else {
         throw new Error("Failed to create consultation");
       }
@@ -271,7 +303,7 @@ export default function NutriCoachPage() {
     }
   };
 
-  // ── Consultations (lazy load — hanya saat user butuh) ──
+  // ── Consultations (WebSocket real-time) ──
   const loadConsultations = async () => {
     try {
       const { ok, data } = await apiListConsultations();
@@ -290,15 +322,63 @@ export default function NutriCoachPage() {
     }
   };
 
+  const connectWebSocket = (consultationId: string) => {
+    // Close existing connection
+    if (wsRef.current) { wsRef.current.close(); }
+
+    const wsUrl = `ws://localhost:8000/ws/consultation/${consultationId}/`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      console.log("[WS] Connected to", consultationId);
+      setWsConnected(true);
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "chat_message") {
+        const newMsg: ConsultationChat = {
+          id: data.id || `ws-${Date.now()}`,
+          consultation_id: consultationId,
+          sender: data.sender,
+          message: data.message,
+          sent_at: data.sent_at,
+        };
+        setConsultationChats((prev) => {
+          // Prevent duplicates
+          if (prev.some(m => m.id === newMsg.id && newMsg.id !== "")) return prev;
+          return [...prev, newMsg];
+        });
+        
+        // Refresh the consultations list to get updated status (e.g., active:Nama)
+        apiListConsultations().then(({ ok, data }) => {
+          if (ok && Array.isArray(data)) {
+            setConsultations(data);
+          }
+        });
+      }
+    };
+
+    ws.onclose = () => {
+      console.log("[WS] Disconnected from", consultationId);
+      setWsConnected(false);
+    };
+
+    ws.onerror = (err) => {
+      console.warn("[WS] Error/Disconnected:", err);
+      setWsConnected(false);
+    };
+
+    wsRef.current = ws;
+  };
+
   const selectConsultation = async (consultationId: string) => {
     setViewMode("consultation");
     setActiveConsultation(consultationId);
     setActiveSession(null);
     setSidebarOpen(false);
-    await loadConsultationChat(consultationId);
-  };
 
-  const loadConsultationChat = async (consultationId: string) => {
+    // Load existing messages via REST API (history)
     try {
       const { ok, data } = await apiListChat(consultationId);
       if (ok && Array.isArray(data)) {
@@ -307,14 +387,9 @@ export default function NutriCoachPage() {
     } catch (e) {
       console.error(e);
     }
-  };
 
-  // Refresh: manual button — tidak pakai polling
-  const handleRefreshChat = async () => {
-    if (!activeConsultation || refreshing) return;
-    setRefreshing(true);
-    await loadConsultationChat(activeConsultation);
-    setRefreshing(false);
+    // Connect WebSocket for real-time updates
+    connectWebSocket(consultationId);
   };
 
   const handleSendConsultationChat = async (e: FormEvent) => {
@@ -326,10 +401,26 @@ export default function NutriCoachPage() {
     setConsultationInput("");
 
     try {
-      const { ok } = await apiSendChat(activeConsultation, text, "user");
+      const { ok, data } = await apiSendChat(activeConsultation, text, "user");
       if (ok) {
-        // Refresh chat setelah kirim — satu kali saja
-        await loadConsultationChat(activeConsultation);
+        // Broadcast via WebSocket so both sides see it instantly
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            id: data?.id || `sent-${Date.now()}`,
+            message: text,
+            sender: "user",
+            sent_at: new Date().toISOString(),
+          }));
+        } else {
+          // Fallback: add locally if WS is not connected
+          setConsultationChats((prev) => [...prev, {
+            id: data?.id || `local-${Date.now()}`,
+            consultation_id: activeConsultation,
+            sender: "user",
+            message: text,
+            sent_at: new Date().toISOString(),
+          }]);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -395,7 +486,13 @@ export default function NutriCoachPage() {
               <div className={styles.emptySidebar}>Belum ada konsultasi</div>
             ) : (
               consultations.map((c) => {
-                const st = statusLabels[c.status] || statusLabels.pending;
+                let rawStatus = c.status || "pending";
+                let st = statusLabels[rawStatus] || statusLabels.pending;
+                
+                if (c.handled_by && rawStatus === "pending") {
+                  st = { label: `Terhubung dengan ${c.handled_by}`, color: "#3b82f6" };
+                }
+
                 return (
                   <div
                     key={c.id}
@@ -446,24 +543,23 @@ export default function NutriCoachPage() {
             <>
               <div className={styles.doctorAvatar}>🩺</div>
               <div className={styles.headerInfo}>
-                <h2>Chat Ahli Gizi</h2>
+                <h2>
+                  {(() => {
+                    if (activeConsultation) {
+                      const c = consultations.find(c => c.id === activeConsultation);
+                      if (c?.handled_by && c.status === "pending") return `Terhubung dengan ${c.handled_by}`;
+                    }
+                    return "Chat Ahli Gizi";
+                  })()}
+                </h2>
                 <span className={styles.onlineStatus}>
-                  <span className={styles.onlineDotYellow}></span> Konsultasi
+                  <span className={wsConnected ? styles.onlineDot : styles.onlineDotRed}></span>
+                  {wsConnected ? "Real-time" : "Offline"}
                 </span>
               </div>
-              <button
-                className={styles.refreshBtn}
-                onClick={handleRefreshChat}
-                disabled={refreshing}
-                title="Muat pesan terbaru"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={refreshing ? styles.spinning : ""}>
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                {refreshing ? "Memuat..." : "Refresh"}
-              </button>
+              <div className={styles.wsBadge} style={{ background: wsConnected ? "#e8f5e9" : "#fce4ec", color: wsConnected ? "#2e7d32" : "#c62828" }}>
+                ● {wsConnected ? "WebSocket Terhubung" : "WebSocket Terputus"}
+              </div>
             </>
           )}
         </header>
@@ -547,7 +643,7 @@ export default function NutriCoachPage() {
                     <div className={styles.welcomeState}>
                       <p>Menunggu balasan dari ahli gizi... 🩺</p>
                       <p style={{ fontSize: "0.85rem", color: "#999", marginTop: "0.5rem" }}>
-                        Klik tombol &quot;Refresh&quot; di atas untuk melihat pesan terbaru.
+                        Pesan akan muncul otomatis secara real-time via WebSocket.
                       </p>
                     </div>
                   )}
@@ -598,22 +694,31 @@ export default function NutriCoachPage() {
 
         {viewMode === "consultation" && activeConsultation && (
           <form onSubmit={handleSendConsultationChat} className={styles.inputArea}>
-            <input
-              type="text"
-              placeholder="Balas pesan ahli gizi..."
-              value={consultationInput}
-              onChange={(e) => setConsultationInput(e.target.value)}
-              className={styles.inputField}
-              disabled={consultationSending}
-            />
-            <button type="submit" className={styles.sendBtn} disabled={!consultationInput.trim() || consultationSending}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
+            {consultations.find(c => c.id === activeConsultation)?.status === "completed" ? (
+              <div style={{ width: "100%", padding: "12px", textAlign: "center", color: "#707a6c", fontSize: "14px", background: "#f5f7f5", borderRadius: "8px" }}>
+                Konsultasi ini telah diselesaikan. Anda tidak dapat mengirim pesan lagi.
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  placeholder="Balas pesan ahli gizi..."
+                  value={consultationInput}
+                  onChange={(e) => setConsultationInput(e.target.value)}
+                  className={styles.inputField}
+                  disabled={consultationSending}
+                />
+                <button type="submit" className={styles.sendBtn} disabled={!consultationInput.trim() || consultationSending}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </>
+            )}
           </form>
         )}
+
       </main>
     </div>
   );

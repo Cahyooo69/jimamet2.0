@@ -161,15 +161,7 @@ export default function LandingPage() {
       <header className={`${styles.navbar} ${scrolled ? styles.navScrolled : ""}`}>
         <div className={`${styles.navInner} container`}>
           <a href="#" className={styles.logo}>
-            <div className={styles.logoIcon}>
-              <svg viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="14" fill="#2e7d32" />
-                <path d="M16 8c-2 0-4 1-5 3s-1 4.5 0 6.5c1.5 3 5 6.5 5 6.5s3.5-3.5 5-6.5c1-2 1-4.5 0-6.5s-3-3-5-3z" fill="#a3f69c" />
-                <path d="M16 10v10" stroke="#2e7d32" strokeWidth="1.2" />
-                <path d="M13 14c1.5 0.5 3 0.5 3 0" stroke="#2e7d32" strokeWidth="1" fill="none" />
-                <path d="M19 13c-1.5 0.5-3 0.5-3 0" stroke="#2e7d32" strokeWidth="1" fill="none" />
-              </svg>
-            </div>
+            <Image src="/jimamet_logo.webp" alt="Jimamet Logo" width={48} height={48} style={{ objectFit: 'contain' }} />
             <span className={styles.logoText}>Jimamet</span>
           </a>
 
@@ -388,13 +380,7 @@ export default function LandingPage() {
           <div className={styles.footerTop}>
             <div className={styles.footerBrand}>
               <div className={styles.logo}>
-                <div className={styles.logoIcon}>
-                  <svg viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="14" fill="#2e7d32" />
-                    <path d="M16 8c-2 0-4 1-5 3s-1 4.5 0 6.5c1.5 3 5 6.5 5 6.5s3.5-3.5 5-6.5c1-2 1-4.5 0-6.5s-3-3-5-3z" fill="#a3f69c" />
-                    <path d="M16 10v10" stroke="#2e7d32" strokeWidth="1.2" />
-                  </svg>
-                </div>
+                <Image src="/jimamet_logo.webp" alt="Jimamet Logo" width={48} height={48} style={{ objectFit: 'contain' }} />
                 <span className={styles.logoText}>Jimamet</span>
               </div>
               <p className="body-sm" style={{ color: "rgba(255, 255, 255, 0.9)", maxWidth: 320, marginTop: 12 }}>
